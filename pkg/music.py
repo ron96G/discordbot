@@ -40,7 +40,7 @@ ytdl_format_options = {
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
-def is_valid_url(self, url: str) -> bool:
+def is_valid_url(url: str) -> bool:
     return url.startswith("https://")
 
 class Youtube():
