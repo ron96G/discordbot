@@ -1,6 +1,4 @@
-import boto3
-import logging
-import os
+import os, sys, logging, boto3
 from discord.ext import commands
 
 from googleapiclient.discovery import build
@@ -38,4 +36,4 @@ if __name__ == '__main__':
         bot.add_cog(Music(bot, youtube))
         bot.run(TOKEN)
         
-    os._exit(0)
+    sys.exit(0)

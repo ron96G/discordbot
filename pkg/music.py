@@ -1,10 +1,5 @@
-import logging
-import os
-from random import randint
+import logging, os, asyncio, youtube_dl
 from discord.ext.commands.context import Context
-import asyncio
-
-import youtube_dl
 
 import discord
 from discord.ext import commands

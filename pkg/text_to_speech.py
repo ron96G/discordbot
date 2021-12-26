@@ -1,5 +1,4 @@
-import logging
-import os
+import logging, os
 from contextlib import closing
 
 import discord
