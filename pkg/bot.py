@@ -1,25 +1,20 @@
+import asyncio
 import logging, os, mimetypes
 from typing import List
-from random import randint
 
-import discord
 from discord.errors import HTTPException, NotFound
 from discord.ext import commands
 from discord.message import Message, Attachment
+from pkg.func import Context
 
-class Context(commands.Context):
-     async def tick(self, value):
-        emoji = '\N{WHITE HEAVY CHECK MARK}' if value else '\N{CROSS MARK}'
-        try:
-            await self.message.add_reaction(emoji)
-        except discord.HTTPException:
-            pass
+from pkg.queue import BotQueue
 
 class Bot(commands.Bot):
     def __init__(self, command_prefix, description, dir='./uploads/'):
         super().__init__(command_prefix = command_prefix, description = description)
         self.log = logging.getLogger('bot')
         self.dir = dir
+        self.queue = BotQueue(self)
 
         if not os.path.exists(self.dir):
             os.makedirs(self.dir)
@@ -60,44 +55,3 @@ class Bot(commands.Bot):
         else:
             await ctx.send("You are not connected to a voice channel")
             raise commands.CommandError("user is not connected to a voice channel")
-
-
-class Func(commands.Cog):
-    def __init__(self, bot: Bot):
-        self.bot = bot
-        self.log = logging.getLogger('cog')
-
-    @commands.command()
-    async def ping(self, ctx: commands.Context):
-        await ctx.send('pong')
-
-    @commands.command()
-    async def join(self, ctx, *, channel: discord.VoiceChannel):
-        if ctx.voice_client is not None:
-            return await ctx.voice_client.move_to(channel)
-        await channel.connect()
-
-    @commands.command()
-    async def summon(self, ctx):
-        await self.bot.join_author(ctx)
-
-    @commands.command()
-    async def stop(self, ctx: commands.Context):
-        if ctx.voice_client is not None:
-            await ctx.voice_client.disconnect()
-
-    @commands.command()
-    async def pause(self, ctx: commands.Context):
-        if ctx.voice_client is not None:
-            ctx.voice_client.pause()
-
-    @commands.command()
-    async def resume(self, ctx: commands.Context):
-        if ctx.voice_client is not None:
-            ctx.voice_client.resume()
-
-    @commands.command()
-    async def guess(self, ctx: Context, number: int):
-        value = randint(1, 6)
-        self.log.info(f'{ctx.author} guessed {"correct" if (number == value) else "incorrect"} ({number})')
-        await ctx.tick(number == value)

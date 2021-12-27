@@ -1,3 +1,4 @@
+from datetime import datetime
 import logging, os
 from contextlib import closing
 
@@ -18,7 +19,7 @@ ffmpeg_options = {
 }
 
 class TextToSpeech(commands.Cog):
-    def __init__(self, bot: commands.Bot, polly_client, voiceId='Cristiano', languageCode='en-US', dir='./polly/'):
+    def __init__(self, bot: commands.Bot, polly_client, voiceId='Bianca', languageCode='en-US', dir='./polly/'):
         self.bot = bot
         self.polly = polly_client
         self.log = logging.getLogger('cog')
@@ -35,23 +36,40 @@ class TextToSpeech(commands.Cog):
             await self.bot.join_author(ctx)
 
         message = ''.join(args)
+        response = None
 
-        response = self.polly.synthesize_speech(
-            Engine = ENGINE,
-            OutputFormat = OUTPUT_FORMAT,
-            SampleRate = SAMPLE_RATE,
-            LanguageCode = self.languageCode,
-            Text = message,
-            VoiceId = self.voiceId
-        )
+        try:
+            response = self.polly.synthesize_speech(
+                Engine = ENGINE,
+                OutputFormat = OUTPUT_FORMAT,
+                SampleRate = SAMPLE_RATE,
+                LanguageCode = self.languageCode,
+                Text = message,
+                VoiceId = self.voiceId
+            )
+        except Exception as e:
+            self.log.error(e)
+            raise commands.CommandError('failed to synthesize speech')
 
+        output = os.path.join(self.dir, f'{ctx.message.id}.mp3')
         if "AudioStream" in response:
             with closing(response["AudioStream"]) as stream:
-                output = os.path.join(self.dir, f'{ctx.message.id}.mp3')
+                
                 with closing(open(output, "wb")) as file:
                     file.write(stream.read())
-                player = discord.FFmpegOpusAudio(output, **ffmpeg_options)
-                ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+                      
         else:
             raise commands.CommandError("no audiostream found in the polly response")
+
+        player = discord.FFmpegOpusAudio(output, **ffmpeg_options)
+        if ctx.voice_client.is_playing():
+            identifier = ctx.message.guild.id
+            if not self.bot.queue.exists(identifier):
+                self.bot.queue.register(identifier, ctx.voice_client)
+            pos = await self.bot.queue.put(identifier, {'ctx': ctx, 'player': player, 'time': datetime.now()})
+
+            return await ctx.send(f'Queued {player.title} at position {pos}')
+
+        ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
+
             

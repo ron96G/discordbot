@@ -8,7 +8,8 @@ from googleapiclient.discovery import build
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
-from pkg.bot import Bot, Func
+from pkg.bot import Bot
+from pkg.func import Func
 from pkg.music import Music, Youtube, Spotify;
 from pkg.text_to_speech import TextToSpeech 
 

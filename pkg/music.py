@@ -1,4 +1,6 @@
 
+from datetime import datetime
+import logging
 from discord.ext.commands.context import Context
 from discord.ext import commands
 
@@ -9,6 +11,7 @@ from pkg.music_utils.ytdl import YTDLSource
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot, youtube: Youtube = None, spotify: Spotify = None):
         self.bot = bot
+        self.log = logging.getLogger('cog')
         self.youtube = youtube
         self.spotify = spotify
     
@@ -30,8 +33,22 @@ class Music(commands.Cog):
         else:
             url = query_or_url
 
-        async with ctx.typing():
+        player = None
+        try:
             player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=stream)
+        except Exception as e:
+            self.log.error(e)
+            raise commands.CommandError('failed to retrieve song')
+
+        if ctx.voice_client.is_playing():
+            identifier = ctx.message.guild.id
+            if not self.bot.queue.exists(identifier):
+                self.bot.queue.register(identifier, ctx.voice_client)
+            pos = await self.bot.queue.put(identifier, {'ctx': ctx, 'player': player, 'time': datetime.now()})
+
+            return await ctx.send(f'Queued {player.title} at position {pos}')
+
+        async with ctx.typing():
             ctx.voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
 
         await ctx.send(f'Now playing: {player.title}')
