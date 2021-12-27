@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import os, sys, logging, boto3
 from discord.ext import commands
 
