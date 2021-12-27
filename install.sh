@@ -24,6 +24,8 @@ SourcePath=/opt/discordbot
 [Service]
 Environment="DISCORD_SECRET_TOKEN=<secret-token>"
 Environment="YOUTUBE_API_KEY=<secret-token>"
+Environment="SPOTIFY_CLIENT_ID=<secret-token>"
+Environment="SPOTIFY_CLIENT_SECRET=<secret-token>"
 ExecStart=/opt/discordbot/main.py
 EOF
 

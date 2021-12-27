@@ -1,12 +1,15 @@
-import logging, os, asyncio, youtube_dl
+import logging, os, asyncio, youtube_dl, re, requests
 from discord.ext.commands.context import Context
 
 import discord
 from discord.ext import commands
 
+import spotipy
+
 from googleapiclient.errors import HttpError
 
 YOUTUBE_VIDEO_BASE_URL = 'https://www.youtube.com/watch?v='
+SPOTIFY_MARKET = "DE"
 YTDL_OUTPUT_DIR = './ytdl/'
 
 if not os.path.exists(YTDL_OUTPUT_DIR):
@@ -35,13 +38,42 @@ ytdl_format_options = {
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
-def is_valid_url(url: str) -> bool:
-    return url.startswith("https://")
+
+class Spotify():
+    def __init__(self, service: spotipy.Spotify):
+        self.service = service
+        self.log = logging.getLogger('svc')
+        self.id_re = re.compile(r'^[A-Za-z0-9]{22}$')
+
+    def __del__(self):
+        pass
+    
+    def is_spotify_url_or_id(self, url_or_id: str) -> bool:
+        is_url = 'spotify' in url_or_id
+        is_id =  bool(self.id_re.match(url_or_id))
+        return is_url | is_id
+
+    async def get_info(self, id_or_url: str):
+        self.log.info(f'Searching spotify for "{id_or_url}"')
+        track = self.service.track(id_or_url, market=SPOTIFY_MARKET)
+
+        self.log.debug(track)
+
+        return {
+            'artist': track['artists'][0]['name'],
+            'name': track['name']
+        }
 
 class Youtube():
     def __init__(self, service):
         self.service = service
-        self.log = logging.getLogger('cog')
+        self.log = logging.getLogger('svc')
+    
+    def __del__(self):
+        self.service.close()
+
+    def is_yt_url(self, url: str) -> bool:
+        return 'youtube' in url
 
     async def find_video_by_query(self, query: str) -> str:
         req = self.service.search().list(
@@ -51,11 +83,12 @@ class Youtube():
             q=query,
             maxResults=1,
         )
-        
+        self.log.info(f'Searching youtube for "{query}"')
+
         try:
             res = req.execute()
-            self.log.debug(res)
-            return YOUTUBE_VIDEO_BASE_URL + res["items"][0]["id"]["videoId"]
+            if len(res["items"]) > 0:
+                return YOUTUBE_VIDEO_BASE_URL + res["items"][0]["id"]["videoId"]
 
         except HttpError as e:
             self.log.error(f'failed to fetch videos failed with {e.status_code}: {e.error_details}')
@@ -87,17 +120,26 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
 
 class Music(commands.Cog):
-    def __init__(self, bot: commands.Bot, youtube: Youtube = None):
+    def __init__(self, bot: commands.Bot, youtube: Youtube = None, spotify: Spotify = None):
         self.bot = bot
         self.youtube = youtube
+        self.spotify = spotify
     
     async def play_video(self, ctx: Context, query_or_url: str, stream = False):
         
         if ctx.voice_client is None:
             await self.bot.join_author(ctx)
         
-        if self.youtube is not None and not is_valid_url(query_or_url):
+        # convert query or spotify url to youtube url for streaming
+        if self.spotify is not None and self.spotify.is_spotify_url_or_id(query_or_url):
+            params = await self.spotify.get_info(query_or_url)
+            url = await self.youtube.find_video_by_query(f'{params["artist"]} {params["name"]}')
+
+        # convert query to a youtube url for streaming
+        elif self.youtube is not None and not self.youtube.is_yt_url(query_or_url):
             url = await self.youtube.find_video_by_query(query_or_url)
+    
+        # is already a valid youtube url
         else:
             url = query_or_url
 
@@ -114,7 +156,7 @@ class Music(commands.Cog):
 
     @commands.command()
     async def stream(self, ctx: Context, *, query_or_url: str):
-        await self.play_video(ctx, query_or_url, True)     
+        await self.play_video(ctx, query_or_url, True)
 
     @commands.command()
     async def volume(self, ctx, volume: int):

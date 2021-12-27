@@ -3,5 +3,6 @@ tmp
 uploads
 ytdl
 .env
+.cache
 
 __pycache__
