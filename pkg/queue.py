@@ -76,7 +76,7 @@ class BotQueue():
         self.log.info('Started queue_runner')
 
         not_connceted_deadline: datetime = None
-        voice_client = self.find_relevant_voice_clients(guild_id)
+        voice_client = self.find_relevant_voice_client(guild_id)
 
         while not self.bot.is_closed():
 
@@ -92,7 +92,7 @@ class BotQueue():
                     elif not_connceted_deadline < datetime.now():
                         return self.deregister(guild_id)
 
-            if voice_client.is_connected() and not voice_client.is_playing():
+            elif not voice_client.is_playing():
                 self.log.info('Getting new item from queue')
                 item = await queue.get()
                 if item is not None:
