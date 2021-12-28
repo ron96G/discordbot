@@ -38,38 +38,37 @@ class TextToSpeech(commands.Cog):
         message = ''.join(args)
         response = None
 
-        try:
-            response = self.polly.synthesize_speech(
-                Engine = ENGINE,
-                OutputFormat = OUTPUT_FORMAT,
-                SampleRate = SAMPLE_RATE,
-                LanguageCode = self.languageCode,
-                Text = message,
-                VoiceId = self.voiceId
-            )
-        except Exception as e:
-            self.log.error(e)
-            raise commands.CommandError('failed to synthesize speech')
+        with ctx.typing():
+            try:
+                response = self.polly.synthesize_speech(
+                    Engine = ENGINE,
+                    OutputFormat = OUTPUT_FORMAT,
+                    SampleRate = SAMPLE_RATE,
+                    LanguageCode = self.languageCode,
+                    Text = message,
+                    VoiceId = self.voiceId
+                )
+            except Exception as e:
+                self.log.error(e)
+                raise commands.CommandError('failed to synthesize speech')
 
-        output = os.path.join(self.dir, f'{ctx.message.id}.mp3')
-        if "AudioStream" in response:
-            with closing(response["AudioStream"]) as stream:
-                
-                with closing(open(output, "wb")) as file:
-                    file.write(stream.read())
-                      
-        else:
-            raise commands.CommandError("no audiostream found in the polly response")
+            output = os.path.join(self.dir, f'{ctx.message.id}.mp3')
+            if "AudioStream" in response:
+                with closing(response["AudioStream"]) as stream:
+                    
+                    with closing(open(output, "wb")) as file:
+                        file.write(stream.read())
+                        
+            else:
+                raise commands.CommandError("no audiostream found in the polly response")
 
         player = discord.FFmpegOpusAudio(output, **ffmpeg_options)
         if ctx.voice_client.is_playing():
             identifier = ctx.message.guild.id
             if not self.bot.queue.exists(identifier):
-                self.bot.queue.register(identifier, ctx.voice_client)
+                self.bot.queue.register(identifier)
             pos = await self.bot.queue.put(identifier, {'ctx': ctx, 'player': player, 'time': datetime.now()})
 
             return await ctx.send(f'Queued {player.title} at position {pos}')
 
         ctx.voice_client.play(player, after=lambda e: print('Player error: %s' % e) if e else None)
-
-            

@@ -8,3 +8,4 @@
 - Queue is lost when the bot connects again
 - Queue is lost when the voice client of the bot reconnects
 - Voice client in tasks is not updated when the voice client changes (thus queue is completely useless until it is removed after 1m)
+- Bot does not disconnect automatically after a certain duration of inactivity

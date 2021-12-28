@@ -35,11 +35,12 @@ if __name__ == '__main__':
 
     bot.add_cog(Func(bot))
 
-    bot.add_cog(TextToSpeech(bot, boto3.client('polly', 
-        aws_access_key_id=ACCESS_KEY,
-        aws_secret_access_key=SECRET_KEY,
-        region_name='eu-central-1')
-    ))
+    if ACCESS_KEY is not None and SECRET_KEY is not None:
+        bot.add_cog(TextToSpeech(bot, boto3.client('polly', 
+            aws_access_key_id=ACCESS_KEY,
+            aws_secret_access_key=SECRET_KEY,
+            region_name='eu-central-1')
+        ))
 
     spotify = None
     if SPOTIFY_CLIENT_ID is not None and SPOTIFY_CLIENT_SECRET is not None: 

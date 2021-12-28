@@ -20,30 +20,32 @@ class Music(commands.Cog):
         if ctx.voice_client is None:
             await self.bot.join_author(ctx)
         
-        # convert query or spotify url to youtube url for streaming
-        if self.spotify is not None and self.spotify.is_spotify_url_or_id(query_or_url):
-            params = await self.spotify.get_info(query_or_url)
-            url = await self.youtube.find_video_by_query(f'{params["artist"]} {params["name"]}')
+        async with ctx.typing():
+            # convert query or spotify url to youtube url for streaming
+            if self.spotify is not None and self.spotify.is_spotify_url_or_id(query_or_url):
+                params = await self.spotify.get_info(query_or_url)
+                url = await self.youtube.find_video_by_query(f'{params["artist"]} {params["name"]}')
 
-        # convert query to a youtube url for streaming
-        elif self.youtube is not None and not self.youtube.is_yt_url(query_or_url):
-            url = await self.youtube.find_video_by_query(query_or_url)
-    
-        # is already a valid youtube url
-        else:
-            url = query_or_url
+            # convert query to a youtube url for streaming
+            elif self.youtube is not None and not self.youtube.is_yt_url(query_or_url):
+                url = await self.youtube.find_video_by_query(query_or_url)
+        
+            # is already a valid youtube url
+            else:
+                url = query_or_url
 
-        player = None
-        try:
-            player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=stream)
-        except Exception as e:
-            self.log.error(e)
-            raise commands.CommandError('failed to retrieve song')
+            player = None
+            try:
+                self.log.info(f'Trying to {"stream" if stream else "download"} {url}')
+                player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=stream)
+            except Exception as e:
+                self.log.error(e)
+                raise commands.CommandError('failed to retrieve song')
 
         if ctx.voice_client.is_playing():
             identifier = ctx.message.guild.id
             if not self.bot.queue.exists(identifier):
-                self.bot.queue.register(identifier, ctx.voice_client)
+                self.bot.queue.register(identifier)
             pos = await self.bot.queue.put(identifier, {'ctx': ctx, 'player': player, 'time': datetime.now()})
 
             return await ctx.send(f'Queued {player.title} at position {pos}')

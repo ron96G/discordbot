@@ -26,10 +26,10 @@ class BotQueue():
         self._queueDict = dict()
 
 
-    def register(self, identifier: str, voiceClient : VoiceClient, maxsize=20):
+    def register(self, identifier: str, maxsize=20):
         q = asyncio.Queue(maxsize=maxsize, loop=self.loop)
         
-        task = self.loop.create_task(self.queue_runner(queue=q, voiceClient=voiceClient, identifier=identifier))
+        task = self.loop.create_task(self.queue_runner(queue=q, guild_id=identifier))
         self.log.info(f'Created queue_runner for {identifier}')
         self._queueDict[identifier] = Item(task, q)
         self.default_maxsize = maxsize
@@ -62,29 +62,44 @@ class BotQueue():
         self._queueDict[identifier].q.put_nowait(item)
         return self._queueDict[identifier].q.qsize()
 
-    async def queue_runner(self, queue: asyncio.Queue, voiceClient : VoiceClient, identifier: str):
+
+    def find_relevant_voice_client(self, guild_id: str) -> VoiceClient:
+        self.log.info(f'Trying to match voice_client for guild {guild_id}')
+        for c in self.bot.voice_clients:
+            if c.guild.id == guild_id:
+                return c
+        self.log.info(f'Guild {guild_id} does not have a voice_client')
+        return None
+
+    async def queue_runner(self, queue: asyncio.Queue, guild_id: str):
         await self.bot.wait_until_ready()
         self.log.info('Started queue_runner')
 
         not_connceted_deadline: datetime = None
+        voice_client = self.find_relevant_voice_clients(guild_id)
 
         while not self.bot.is_closed():
 
-            if not voiceClient.is_connected():
-                if not_connceted_deadline is None:
-                    self.log.info(f'Flagged queue_runner {identifier} for inactivity')
-                    not_connceted_deadline = datetime.now() + timedelta(0, VOICE_CLIENT_INACTIVITY_TIMEOUT)
-                elif not_connceted_deadline < datetime.now():
-                    return self.deregister(identifier)
+            if not voice_client.is_connected():
+                # there might be a new voice_client that is used...
+                voice_client = self.find_relevant_voice_client(guild_id)
 
-            if voiceClient.is_connected() and not voiceClient.is_playing():
+                if voice_client is None:
+                    if not_connceted_deadline is None:
+                        self.log.info(f'Flagged queue_runner {guild_id} for inactivity')
+                        not_connceted_deadline = datetime.now() + timedelta(0, VOICE_CLIENT_INACTIVITY_TIMEOUT)
+
+                    elif not_connceted_deadline < datetime.now():
+                        return self.deregister(guild_id)
+
+            if voice_client.is_connected() and not voice_client.is_playing():
                 self.log.info('Getting new item from queue')
                 item = await queue.get()
                 if item is not None:
                     author = item['ctx'].author.name
                     track = item['player'].title
                     self.log.info(f'Playing track of {author}: {track}')
-                    voiceClient.play(item['player'])
+                    voice_client.play(item['player'])
                     queue.task_done()
                     await item['ctx'].send(f'Now playing {track} requested by {author}')
 
