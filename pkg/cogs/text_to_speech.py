@@ -5,6 +5,8 @@ from contextlib import closing
 import discord
 from discord.ext import commands
 
+from pkg.bot import Bot
+
 ## See https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/polly.html#Polly.Client.synthesize_speech
 
 # VoiceId='Aditi'|'Amy'|'Astrid'|'Bianca'|'Brian'|'Camila'|'Carla'|'Carmen'|'Celine'|'Chantal'|'Conchita'|'Cristiano'|'Dora'|'Emma'|'Enrique'|'Ewa'|'Filiz'|'Gabrielle'|'Geraint'|'Giorgio'|'Gwyneth'|'Hans'|'Ines'|'Ivy'|'Jacek'|'Jan'|'Joanna'|'Joey'|'Justin'|'Karl'|'Kendra'|'Kevin'|'Kimberly'|'Lea'|'Liv'|'Lotte'|'Lucia'|'Lupe'|'Mads'|'Maja'|'Marlene'|'Mathieu'|'Matthew'|'Maxim'|'Mia'|'Miguel'|'Mizuki'|'Naja'|'Nicole'|'Olivia'|'Penelope'|'Raveena'|'Ricardo'|'Ruben'|'Russell'|'Salli'|'Seoyeon'|'Takumi'|'Tatyana'|'Vicki'|'Vitoria'|'Zeina'|'Zhiyu'|'Aria'|'Ayanda'
@@ -19,7 +21,7 @@ ffmpeg_options = {
 }
 
 class TextToSpeech(commands.Cog):
-    def __init__(self, bot: commands.Bot, polly_client, voiceId='Bianca', languageCode='en-US', dir='./polly/'):
+    def __init__(self, bot: Bot, polly_client, voiceId='Bianca', languageCode='en-US', dir='./polly/'):
         self.bot = bot
         self.polly = polly_client
         self.log = logging.getLogger('cog')
@@ -35,7 +37,10 @@ class TextToSpeech(commands.Cog):
         if ctx.voice_client is None:
             await self.bot.join_author(ctx)
 
-        message = ''.join(args)
+        id = ctx.message.guild.id
+        message = ''
+        for word in args:
+            message.join(' '.join(word))
         response = None
 
         with ctx.typing():
@@ -44,9 +49,9 @@ class TextToSpeech(commands.Cog):
                     Engine = ENGINE,
                     OutputFormat = OUTPUT_FORMAT,
                     SampleRate = SAMPLE_RATE,
-                    LanguageCode = self.languageCode,
+                    LanguageCode = self.bot.config.get_config_for(id, key='languageCode', default=self.languageCode),
                     Text = message,
-                    VoiceId = self.voiceId
+                    VoiceId = self.bot.config.get_config_for(id, key='voiceId', default=self.voiceId)
                 )
             except Exception as e:
                 self.log.error(e)

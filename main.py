@@ -8,10 +8,14 @@ from googleapiclient.discovery import build
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
+
+from pkg.utils.config import ConfigMap
 from pkg.bot import Bot
-from pkg.func import Func
-from pkg.music import Music, Youtube, Spotify;
-from pkg.text_to_speech import TextToSpeech 
+from pkg.cogs.config import Config
+from pkg.cogs.func import Func
+from pkg.cogs.music import Music, Youtube, Spotify;
+from pkg.cogs.text_to_speech import TextToSpeech 
+from pkg.cogs.wikipedia import Wikipedia
 
 
 TOKEN = os.environ.get('DISCORD_SECRET_TOKEN', None)
@@ -30,17 +34,22 @@ if __name__ == '__main__':
         format = '[%(asctime)s] [%(pathname)s:%(lineno)d] %(levelname)s - %(message)s',
         datefmt = '%Y-%m-%dT%H:%M:%S'
     )
-    
-    bot = Bot(command_prefix=commands.when_mentioned_or("!"), description='Bot example')
+    configmap = ConfigMap.from_file('discordbot_config.json')
 
+    bot = Bot(command_prefix=commands.when_mentioned_or("!"), description='Bot example', configmap=configmap)
+
+    bot.add_cog(Config(bot))
     bot.add_cog(Func(bot))
 
-    if ACCESS_KEY is not None and SECRET_KEY is not None:
-        bot.add_cog(TextToSpeech(bot, boto3.client('polly', 
-            aws_access_key_id=ACCESS_KEY,
-            aws_secret_access_key=SECRET_KEY,
-            region_name='eu-central-1')
-        ))
+
+    t2s = TextToSpeech(bot, boto3.client('polly', 
+        aws_access_key_id=ACCESS_KEY,
+        aws_secret_access_key=SECRET_KEY,
+        region_name='eu-central-1')
+    )
+    bot.add_cog(t2s)
+
+    bot.add_cog(Wikipedia(bot, t2s))
 
     spotify = None
     if SPOTIFY_CLIENT_ID is not None and SPOTIFY_CLIENT_SECRET is not None: 

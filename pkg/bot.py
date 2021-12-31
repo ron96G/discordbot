@@ -5,22 +5,29 @@ from typing import List
 from discord.errors import HTTPException, NotFound
 from discord.ext import commands
 from discord.message import Message, Attachment
-from pkg.func import Context
+from pkg.utils.config import ConfigMap
+from pkg.cogs.func import Context
 
-from pkg.queue import BotQueue
+from pkg.utils.queue import BotQueue
 
 class Bot(commands.Bot):
-    def __init__(self, command_prefix, description, dir='./uploads/'):
+    def __init__(self, command_prefix, description, configmap: ConfigMap = None, dir='./uploads/'):
         super().__init__(command_prefix = command_prefix, description = description)
         self.log = logging.getLogger('bot')
         self.dir = dir
         self.queue = BotQueue(self)
+        self.config = configmap or ConfigMap(self, [])
 
         if not os.path.exists(self.dir):
             os.makedirs(self.dir)
 
     async def on_ready(self):
         self.log.info(f'Logged in as {self.user.name} with id {self.user.id}')
+
+        for guild in self.guilds:
+            id = guild.id
+            if not self.config.exists(id):
+                self.config.set_defaults_for(id)
 
     async def get_context(self, message, *, cls=Context):
         return await super().get_context(message, cls=cls)

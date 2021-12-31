@@ -4,5 +4,6 @@ uploads
 ytdl
 .env
 .cache
+*config.json
 
 __pycache__
