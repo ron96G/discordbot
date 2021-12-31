@@ -5,7 +5,7 @@ import atexit
 
 defaultConfig = {
     'languageCode': 'en-US',
-    'voiceId': 'Bianca',
+    'voiceId': 'Amy',
     'wikiLanguage': 'en'
 }
 

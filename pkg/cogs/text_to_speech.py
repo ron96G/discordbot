@@ -21,13 +21,14 @@ ffmpeg_options = {
 }
 
 class TextToSpeech(commands.Cog):
-    def __init__(self, bot: Bot, polly_client, voiceId='Bianca', languageCode='en-US', dir='./polly/'):
+    def __init__(self, bot: Bot, polly_client, voiceId='Amy', languageCode='en-US', dir='./polly/', max_characters=2000):
         self.bot = bot
         self.polly = polly_client
         self.log = logging.getLogger('cog')
         self.voiceId = voiceId
         self.languageCode = languageCode
         self.dir = dir
+        self.max_characters = max_characters
 
         if not os.path.exists(self.dir):
             os.makedirs(self.dir)
@@ -39,10 +40,15 @@ class TextToSpeech(commands.Cog):
 
         id = ctx.message.guild.id
         message = ''
-        for word in args:
-            message.join(' '.join(word))
-        response = None
+        if isinstance(args, str):
+            message = args
+        else:
+            message = ''.join(args)
 
+        if len(message) > self.max_characters:
+            return await ctx.send(f'Length of message cannot exceed {self.max_characters}')
+
+        response = None
         with ctx.typing():
             try:
                 response = self.polly.synthesize_speech(

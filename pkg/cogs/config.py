@@ -4,14 +4,6 @@ from discord.ext import commands
 from pkg.cogs.func import Context
 from pkg.bot import Bot
 
-
-defaultConfig = {
-    'languageCode': 'en-US',
-    'voiceId': 'Bianca'
-}
-
-default_configfile_name = 'discordbot_config.json'
-
 class Config(commands.Cog):
 
     def __init__(self, bot: Bot):
