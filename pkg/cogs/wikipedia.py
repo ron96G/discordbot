@@ -24,11 +24,17 @@ class Wikipedia(commands.Cog):
             lang = self.bot.config.get_config_for(id, 'wikiLanguage', self.langugage)
             wikipedia.set_lang(lang)
 
-            title = ''.join(args)
-            try:
-                search_result = wikipedia.suggest(title)
+            title = ' '.join(args)
 
-                page = wikipedia.summary(search_result)
+            self.log.info(f'Getting suggestion for "{title}" from Wikipedia')
+            try:
+                suggestion = wikipedia.suggest(title)
+                if suggestion is None:
+                    self.log.info('No good suggestion found. Using supplied title')
+                    suggestion = title
+
+                self.log.info(f'Getting summary of page "{suggestion}" from Wikipedia')
+                page = wikipedia.summary(suggestion)
 
                 until_last_sentence = page[:self.max_characters].rfind('.')
                 await ctx.send(f'{page[:until_last_sentence]}...')
@@ -39,7 +45,8 @@ class Wikipedia(commands.Cog):
             except wikipedia.DisambiguationError as e:
                 return await ctx.send(f'{title} may refer to {e.options}')
                 
-            except KeyError:
-                return await ctx.send(f'Unable to find the requested page with title "{title}"')
+            except Exception as e:
+                self.log.error(f'failed command wikipedia.explain with: {e}')
+                return await ctx.send(f'Currently unable to explain "{title}". Please try again later')
             
 

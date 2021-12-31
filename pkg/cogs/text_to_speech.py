@@ -43,7 +43,7 @@ class TextToSpeech(commands.Cog):
         if isinstance(args, str):
             message = args
         else:
-            message = ''.join(args)
+            message = ' '.join(args)
 
         if len(message) > self.max_characters:
             return await ctx.send(f'Length of message cannot exceed {self.max_characters}')
