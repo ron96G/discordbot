@@ -26,7 +26,7 @@ class Wikipedia(commands.Cog):
 
             title = ''.join(args)
             try:
-                search_result = wikipedia.search(title, results=1)
+                search_result = wikipedia.suggest(title)
 
                 page = wikipedia.summary(search_result)
 
