@@ -37,8 +37,6 @@ class Wikipedia(commands.Cog):
                     await self.t2s.say(ctx, page[:until_last_sentence])
 
             except wikipedia.DisambiguationError as e:
-                if self.t2s is not None:
-                    await self.t2s.say(ctx, page[:until_last_sentence])
                 return await ctx.send(f'{title} may refer to {e.options}')
                 
             except KeyError:
