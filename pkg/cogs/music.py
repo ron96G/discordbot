@@ -21,15 +21,18 @@ class Music(commands.Cog):
         if ctx.voice_client is None:
             await self.bot.join_author(ctx)
         
+        data = None
         async with ctx.typing():
             # convert query or spotify url to youtube url for streaming
             if self.spotify is not None and self.spotify.is_spotify_url_or_id(query_or_url):
                 params = await self.spotify.get_info(query_or_url)
-                url = await self.youtube.find_video_by_query(f'{params["artist"]} {params["name"]}')
+                data = await self.youtube.find_video_by_query(f'{params["artist"]} {params["name"]}')
+                url = data['url']
 
             # convert query to a youtube url for streaming
             elif self.youtube is not None and not self.youtube.is_yt_url(query_or_url):
-                url = await self.youtube.find_video_by_query(query_or_url)
+                data = await self.youtube.find_video_by_query(query_or_url)
+                url = data['url']
         
             # is already a valid youtube url
             else:
@@ -42,23 +45,11 @@ class Music(commands.Cog):
                 self.log.error(e)
                 raise commands.CommandError('failed to retrieve song')
 
-            if ctx.voice_client.is_playing():
-                id = ctx.message.guild.id
-                if not self.bot.queue.exists(id):
-                    self.bot.queue.register(id)
-                pos = await self.bot.queue.put(id, {'ctx': ctx, 'player': _player, 'time': datetime.now()})
-                return await ctx.message.reply(f'Queued at position {pos}')
-
-            
-            try:
-                player = await _player
-                ctx.voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
-            except DiscordException as e:
-                self.log.error(f'Failed to play audio: {e}')
-                await ctx.send(f'Failed to play {player.title}. Skipping...')
-            else:
-                await ctx.send(f'Now playing: {player.title}')
-
+            id = ctx.message.guild.id
+            if not self.bot.queue.exists(id):
+                await self.bot.queue.register(id)
+            pos = await self.bot.queue.put(id, {'ctx': ctx, 'player': _player, 'time': datetime.now()})
+            return await ctx.message.reply(f'Queued {data["title"] + " " if data else ""}at position {pos}')
 
     @commands.command()
     async def play(self, ctx: Context, *, query_or_url: str):

@@ -25,20 +25,24 @@ class BotQueue():
         self.log = logging.getLogger('queue')
         self.loop = bot.loop or asyncio.get_event_loop()
         self._queueDict = dict()
+        self.lock =  asyncio.Lock()
 
 
-    def register(self, identifier: str, maxsize=20):
-        q = asyncio.Queue(maxsize=maxsize, loop=self.loop)
-        
-        task = self.loop.create_task(self.queue_runner(queue=q, guild_id=identifier))
-        self.log.info(f'Created queue_runner for {identifier}')
-        self._queueDict[identifier] = Item(task, q)
-        self.default_maxsize = maxsize
+    async def register(self, identifier: str, maxsize=20):
+        async with self.lock:
+            if not self.exists(identifier):
+                q = asyncio.Queue(maxsize=maxsize, loop=self.loop)
+                
+                task = self.loop.create_task(self.queue_runner(queue=q, guild_id=identifier))
+                self.log.info(f'Created queue_runner for {identifier}')
+                self._queueDict[identifier] = Item(task, q)
+                self.default_maxsize = maxsize
 
-    def deregister(self, identifier: str):
-        if self.exists(identifier):
-            self.log.info(f'Removing queue for {identifier}')
-            del self._queueDict[identifier]
+    async def deregister(self, identifier: str):
+        async with self.lock:
+            if self.exists(identifier):
+                self.log.info(f'Removing queue for {identifier}')
+                del self._queueDict[identifier]
 
     def exists(self, identifier: str):
         return identifier in self._queueDict
@@ -70,7 +74,6 @@ class BotQueue():
         self.log.info(f'Added new item to queue {identifier}')
         return self._queueDict[identifier].q.qsize()
 
-
     def find_relevant_voice_client(self, guild_id: str) -> VoiceClient:
         self.log.info(f'Trying to match voice_client for guild {guild_id}')
         for c in self.bot.voice_clients:
@@ -97,7 +100,7 @@ class BotQueue():
                         not_connceted_deadline = datetime.now() + timedelta(0, VOICE_CLIENT_INACTIVITY_TIMEOUT)
 
                     elif not_connceted_deadline < datetime.now():
-                        return self.deregister(guild_id)
+                        return await self.deregister(guild_id)
 
             elif not voice_client.is_playing():
                 self.log.info(f'Getting new item from queue {guild_id}')
@@ -118,7 +121,7 @@ class BotQueue():
                             self.log.error(f'Failed to play audio in queue {guild_id}: {e}')
                             await item['ctx'].send(f'Failed to play {track} requested by {author}. Skipping...')
                         else:
-                            await item['ctx'].send(f'Now playing {track} requested by {author}')
+                            await item['ctx'].send(f'Now playing "{track}" requested by "{author}"')
                         finally:
                             queue.task_done()
                 else:

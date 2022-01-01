@@ -81,11 +81,8 @@ class TextToSpeech(commands.Cog):
             voice_id = self.bot.config.get_config_for(id, key='voiceId', default=self.voiceId)
             player = self.bot.loop.run_in_executor(None, lambda: self.synthesize_speech(ctx.message.id, message, lang_code, voice_id))
 
-            if ctx.voice_client.is_playing():
-                if not self.bot.queue.exists(id):
-                    self.bot.queue.register(id)
-                pos = await self.bot.queue.put(id, {'ctx': ctx, 'player': player, 'time': datetime.now()})
+            if not self.bot.queue.exists(id):
+                await self.bot.queue.register(id)
+            pos = await self.bot.queue.put(id, {'ctx': ctx, 'player': player, 'time': datetime.now()})
 
-                return await ctx.message.reply(f'Queued at position {pos}')
-
-            ctx.voice_client.play(await player, after=lambda e: print('Player error: %s' % e) if e else None)
+            return await ctx.message.reply(f'Queued at position {pos}')

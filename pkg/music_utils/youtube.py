@@ -28,10 +28,16 @@ class Youtube():
         try:
             res = req.execute()
             if len(res["items"]) > 0:
-                return YOUTUBE_VIDEO_BASE_URL + res["items"][0]["id"]["videoId"]
+                return {
+                    'url': YOUTUBE_VIDEO_BASE_URL + res["items"][0]["id"]["videoId"],
+                    'title': res["items"][0]["snippet"]["title"]
+                }
 
         except HttpError as e:
             self.log.error(f'failed to fetch videos failed with {e.status_code}: {e.error_details}')
             # TODO raise exception
 
-        return YOUTUBE_VIDEO_BASE_URL + 'dQw4w9WgXcQ'
+        return {
+            'url': YOUTUBE_VIDEO_BASE_URL + 'dQw4w9WgXcQ',
+            'title': 'Rick Astley - Never Gonna Give You Up (Official Music Video)'
+        }
