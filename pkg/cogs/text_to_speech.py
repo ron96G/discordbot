@@ -20,6 +20,15 @@ ffmpeg_options = {
     'options': '-vn'
 }
 
+
+class SynthesizeSpeechSource(discord.PCMVolumeTransformer):
+    """ Required as a wrapper to make the audio source complied to the required interface in the queue """
+    def __init__(self, source, volume=0.5, title = 'SynthesizeSpeech'):
+        super().__init__(source, volume)
+
+        self.title = title
+        logging.info(f'Successfully constructed audiosource for synthesized speech')
+
 class TextToSpeech(commands.Cog):
     def __init__(self, bot: Bot, polly_client, voiceId='Amy', languageCode='en-US', dir='./polly/', max_characters=2000):
         self.bot = bot
@@ -58,7 +67,7 @@ class TextToSpeech(commands.Cog):
             raise commands.CommandError("no audiostream found in the polly response")
 
         self.log.info(f'Successfully synthesized speech with id {id}')
-        return discord.FFmpegOpusAudio(output, **ffmpeg_options)
+        return SynthesizeSpeechSource(discord.FFmpegPCMAudio(output, **ffmpeg_options))
 
     @commands.command()
     async def say(self, ctx: commands.Context, *args):

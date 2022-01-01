@@ -90,7 +90,7 @@ class BotQueue():
         voice_client = self.find_relevant_voice_client(guild_id)
 
         while not self.bot.is_closed():
-            if not voice_client.is_connected():
+            if voice_client is None or not voice_client.is_connected():
                 # there might be a new voice_client that is used...
                 voice_client = self.find_relevant_voice_client(guild_id)
 
