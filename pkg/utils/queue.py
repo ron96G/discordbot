@@ -96,11 +96,12 @@ class BotQueue():
                 self.log.info('Getting new item from queue')
                 item = await queue.get()
                 if item is not None:
-                    author = item['ctx'].author.name
-                    track = item['player'].title
-                    self.log.info(f'Playing track of {author}: {track}')
-                    voice_client.play(item['player'])
-                    queue.task_done()
-                    await item['ctx'].send(f'Now playing {track} requested by {author}')
+                    with item['ctx'].typing():
+                        author = item['ctx'].author.name
+                        track = item['player'].title
+                        voice_client.play(await item['player'])
+                        self.log.info(f'Playing track of {author}: {track}')
+                        await item['ctx'].send(f'Now playing {track} requested by {author}')
+                        queue.task_done()
 
             await asyncio.sleep(1)

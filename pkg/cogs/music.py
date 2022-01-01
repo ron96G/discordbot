@@ -34,26 +34,23 @@ class Music(commands.Cog):
             else:
                 url = query_or_url
 
-            player = None
             try:
                 self.log.info(f'Trying to {"stream" if stream else "download"} {url}')
-                player = await YTDLSource.from_url(url, loop=self.bot.loop, stream=stream)
+                _player = YTDLSource.from_url(url, loop=self.bot.loop, stream=stream)
             except Exception as e:
                 self.log.error(e)
                 raise commands.CommandError('failed to retrieve song')
 
-        if ctx.voice_client.is_playing():
-            identifier = ctx.message.guild.id
-            if not self.bot.queue.exists(identifier):
-                self.bot.queue.register(identifier)
-            pos = await self.bot.queue.put(identifier, {'ctx': ctx, 'player': player, 'time': datetime.now()})
+            if ctx.voice_client.is_playing():
+                identifier = ctx.message.guild.id
+                if not self.bot.queue.exists(identifier):
+                    self.bot.queue.register(identifier)
+                pos = await self.bot.queue.put(identifier, {'ctx': ctx, 'player': _player, 'time': datetime.now()})
 
-            return await ctx.send(f'Queued {player.title} at position {pos}')
-
-        async with ctx.typing():
+                return await ctx.message.reply(f'Queued at position {pos}')
+            player = await _player
             ctx.voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
-
-        await ctx.send(f'Now playing: {player.title}')
+            await ctx.send(f'Now playing: {player.title}')
 
 
     @commands.command()

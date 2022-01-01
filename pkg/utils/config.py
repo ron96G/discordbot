@@ -48,15 +48,15 @@ class ConfigMap():
             self.add_config_for(id, defaultConfig)
         pass
 
-    @staticmethod
-    def from_file(configfile_name: str = default_configfile_name):
+    @classmethod
+    def from_file(cls, configfile_name: str = default_configfile_name):
         try:
             with open(configfile_name, 'r') as f:
                 data = json.load(f)
-                return ConfigMap(data, configfile_name=configfile_name)
+                return cls(data, configfile_name=configfile_name)
         except IOError:
             logging.warn('failed to restore config from file')
-            return ConfigMap([], configfile_name=configfile_name) 
+            return cls([], configfile_name=configfile_name) 
 
     def persist(self):
         self.log.info('Persisting current config state...')

@@ -1,3 +1,4 @@
+import logging
 import os, asyncio, youtube_dl, discord
 
 YTDL_OUTPUT_DIR = './ytdl/'
@@ -28,20 +29,21 @@ ffmpeg_options = {
 
 ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
 
-# Copied from https://github.com/Rapptz/discord.py/blob/45d498c1b76deaf3b394d17ccf56112fa691d160/examples/basic_voice.py#L33    
+# Based on https://github.com/Rapptz/discord.py/blob/45d498c1b76deaf3b394d17ccf56112fa691d160/examples/basic_voice.py#L33    
 class YTDLSource(discord.PCMVolumeTransformer):
     def __init__(self, source, *, data, volume=0.5):
         super().__init__(source, volume)
 
         self.data = data
+        self.log = logging.getLogger('ytdl_source')
 
         self.title = data.get('title')
         self.url = data.get('url')
+        self.log.info(f'Successfully constructed audiosource for "{self.title}"')
 
     @classmethod
-    async def from_url(cls, url, *, loop=None, stream=False):
-        loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
+    def _from_url(cls, url, *, stream=False):
+        data = ytdl.extract_info(url, download=not stream)
 
         if 'entries' in data:
             # take first item from a playlist
@@ -49,3 +51,8 @@ class YTDLSource(discord.PCMVolumeTransformer):
 
         filename = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+
+    @classmethod
+    def from_url(cls, url, *, loop=None, stream=False):
+        loop = loop or asyncio.get_event_loop()
+        return loop.run_in_executor(None, lambda: YTDLSource._from_url(url=url, stream=stream))
