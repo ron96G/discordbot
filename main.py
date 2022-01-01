@@ -34,7 +34,7 @@ if __name__ == '__main__':
         format = '[%(asctime)s] [%(pathname)s:%(lineno)d] %(levelname)s - %(message)s',
         datefmt = '%Y-%m-%dT%H:%M:%S'
     )
-    configmap = ConfigMap.from_file('discordbot_config.json')
+    configmap = ConfigMap.from_file(os.environ.get('CONFIGFILE', 'discordbot_config.json'))
 
     bot = Bot(command_prefix=commands.when_mentioned_or("!"), description='Bot example', configmap=configmap)
 

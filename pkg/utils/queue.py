@@ -2,6 +2,7 @@ import asyncio, logging
 from datetime import datetime, timedelta
 from asyncio.queues import Queue
 from asyncio.tasks import Task
+from discord.errors import ClientException, DiscordException
 
 from discord.ext import commands
 from discord.voice_client import VoiceClient
@@ -60,6 +61,7 @@ class BotQueue():
 
     async def put(self, identifier: str, item):
         self._queueDict[identifier].q.put_nowait(item)
+        self.log.info(f'Added new item to queue {identifier}')
         return self._queueDict[identifier].q.qsize()
 
 
@@ -79,7 +81,6 @@ class BotQueue():
         voice_client = self.find_relevant_voice_client(guild_id)
 
         while not self.bot.is_closed():
-
             if not voice_client.is_connected():
                 # there might be a new voice_client that is used...
                 voice_client = self.find_relevant_voice_client(guild_id)
@@ -93,15 +94,28 @@ class BotQueue():
                         return self.deregister(guild_id)
 
             elif not voice_client.is_playing():
-                self.log.info('Getting new item from queue')
+                self.log.info(f'Getting new item from queue {guild_id}')
                 item = await queue.get()
                 if item is not None:
-                    with item['ctx'].typing():
-                        author = item['ctx'].author.name
-                        track = item['player'].title
-                        voice_client.play(await item['player'])
-                        self.log.info(f'Playing track of {author}: {track}')
-                        await item['ctx'].send(f'Now playing {track} requested by {author}')
-                        queue.task_done()
+                    async with item['ctx'].typing():
+                        try:
+                            player = await item['player']
+                            if player is None:
+                                raise DiscordException('Player could not be constructed')
+                            
+                            author = item['ctx'].author.name
+                            track = player.title
+                            self.log.info(f'Selected next track "{author}: {track}"')
+                            voice_client.play(player)
+
+                        except DiscordException as e:
+                            self.log.error(f'Failed to play audio in queue {guild_id}: {e}')
+                            await item['ctx'].send(f'Failed to play {track} requested by {author}. Skipping...')
+                        else:
+                            await item['ctx'].send(f'Now playing {track} requested by {author}')
+                        finally:
+                            queue.task_done()
+                else:
+                    self.log.debug('Skipping empty item')
 
             await asyncio.sleep(1)

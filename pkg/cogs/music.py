@@ -1,6 +1,7 @@
 
 from datetime import datetime
 import logging
+from discord.errors import DiscordException
 from discord.ext.commands.context import Context
 from discord.ext import commands
 
@@ -42,15 +43,21 @@ class Music(commands.Cog):
                 raise commands.CommandError('failed to retrieve song')
 
             if ctx.voice_client.is_playing():
-                identifier = ctx.message.guild.id
-                if not self.bot.queue.exists(identifier):
-                    self.bot.queue.register(identifier)
-                pos = await self.bot.queue.put(identifier, {'ctx': ctx, 'player': _player, 'time': datetime.now()})
-
+                id = ctx.message.guild.id
+                if not self.bot.queue.exists(id):
+                    self.bot.queue.register(id)
+                pos = await self.bot.queue.put(id, {'ctx': ctx, 'player': _player, 'time': datetime.now()})
                 return await ctx.message.reply(f'Queued at position {pos}')
-            player = await _player
-            ctx.voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
-            await ctx.send(f'Now playing: {player.title}')
+
+            
+            try:
+                player = await _player
+                ctx.voice_client.play(player, after=lambda e: print(f'Player error: {e}') if e else None)
+            except DiscordException as e:
+                self.log.error(f'Failed to play audio: {e}')
+                await ctx.send(f'Failed to play {player.title}. Skipping...')
+            else:
+                await ctx.send(f'Now playing: {player.title}')
 
 
     @commands.command()
