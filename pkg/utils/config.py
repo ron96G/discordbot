@@ -15,7 +15,7 @@ class ConfigMap():
     def __init__(self, configs: List[Dict[str, Any]], configfile_name: str = None):
         self.log = logging.getLogger('config')
         self._configs = dict()
-        self.configfile_name = default_configfile_name or configfile_name
+        self.configfile_name = configfile_name or default_configfile_name
 
         for cfg in configs:
             id = cfg['id']
@@ -59,7 +59,7 @@ class ConfigMap():
             return cls([], configfile_name=configfile_name) 
 
     def persist(self):
-        self.log.info('Persisting current config state...')
+        self.log.info(f'Persisting current config state to {self.configfile_name}...')
         with open(self.configfile_name, 'w') as f:
             out = []
             for id in self._configs:

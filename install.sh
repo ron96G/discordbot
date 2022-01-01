@@ -28,7 +28,7 @@ Environment="DISCORD_SECRET_TOKEN=<secret-token>"
 Environment="YOUTUBE_API_KEY=<secret-token>"
 Environment="SPOTIFY_CLIENT_ID=<secret-token>"
 Environment="SPOTIFY_CLIENT_SECRET=<secret-token>"
-Environment="CONFIGFILE="/opt/discordbot/discordbot_config.json
+Environment="CONFIGFILE=/opt/discordbot/discordbot_config.json"
 ExecStart=/opt/discordbot/main.py
 EOF
 
