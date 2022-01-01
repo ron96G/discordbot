@@ -47,12 +47,18 @@ class BotQueue():
         if self.exists(identifier):
             q = self._queueDict[identifier].q
             size = q.qsize()
-            for _  in range(size):
+            for _ in range(size):
                 q.get_nowait()
                 q.task_done()
 
             return size
         return 0
+    
+    def pop(self, identifier: str):
+        if self.exists(identifier):
+            q = self._queueDict[identifier].q
+            q.get_nowait()
+            q.task_done()
 
     def size(self, identifier: str):
         if self.exists(identifier):

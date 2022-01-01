@@ -17,6 +17,7 @@ class Wikipedia(commands.Cog):
 
     @commands.Command
     async def explain(self, ctx: commands.Context,  *args):
+        """ Let the bot explain a topic to you """
         import wikipedia
         id = ctx.message.guild.id
         lang = self.bot.config.get_config_for(id, 'wikiLanguage', self.langugage)

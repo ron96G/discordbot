@@ -12,6 +12,7 @@ class Config(commands.Cog):
 
     @commands.Command
     async def set(self, ctx: Context, key: str, val: str):
+        """ Set a config parameter for your bot instance """
         id = ctx.message.guild.id
         if not self.bot.config.exists(id):
             self.log.info(f'{id} - Setting initial config with {key}={val}')
@@ -24,6 +25,8 @@ class Config(commands.Cog):
 
     @commands.Command
     async def get(self, ctx: Context, *args):
+        """ Get either one config parameter by the provided key 
+            or the entire config for your bot instance """
         id = ctx.message.guild.id
         if self.bot.config.exists(id):
             if len(args) <= 0:

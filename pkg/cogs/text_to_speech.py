@@ -62,6 +62,7 @@ class TextToSpeech(commands.Cog):
 
     @commands.command()
     async def say(self, ctx: commands.Context, *args):
+        """ Let the bot talk to you """
         if ctx.voice_client is None:
             await self.bot.join_author(ctx)
 

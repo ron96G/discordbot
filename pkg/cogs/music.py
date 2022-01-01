@@ -62,14 +62,17 @@ class Music(commands.Cog):
 
     @commands.command()
     async def play(self, ctx: Context, *, query_or_url: str):
+        """ Play the provided query/url/song or add it to queue if one is already playing"""
         await self.play_video(ctx, query_or_url)
 
     @commands.command()
     async def stream(self, ctx: Context, *, query_or_url: str):
+        """ Play the provided query/url/song or add it to queue if one is already playing"""
         await self.play_video(ctx, query_or_url, True)
 
     @commands.command()
     async def volume(self, ctx, volume: int):
+        """ Control the volume of the voice client """
         if ctx.voice_client is None:
             return await ctx.send("Not connected to a voice channel.")
 
