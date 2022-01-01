@@ -10,7 +10,7 @@ cd discordbot
 pip3 install --upgrade -r requirements.txt
 chmod +x main.py
 
-if [ ! -x "$(command -v ffmpe)" ]; then
+if [ ! -x "$(command -v ffmpeg)" ]; then
     mkdir -p /usr/local/bin/ffmpeg
     cd /usr/local/bin/ffmpeg
     wget https://www.johnvansickle.com/ffmpeg/old-releases/ffmpeg-4.2.1-amd64-static.tar.xz
