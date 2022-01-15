@@ -1,13 +1,15 @@
 #!/bin/bash
 set -e
 yum install -y git python3 opus
-
+curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
 
 cd /opt
 
 git clone https://github.com/ron96G/discordbot.git --branch main || true
 cd discordbot
-pip3 install --upgrade -r requirements.txt
+poetry install
+source $HOME/.poetry/env
+
 chmod +x main.py
 
 if [ ! -x "$(command -v ffmpeg)" ]; then
@@ -29,7 +31,7 @@ Environment="YOUTUBE_API_KEY=<secret-token>"
 Environment="SPOTIFY_CLIENT_ID=<secret-token>"
 Environment="SPOTIFY_CLIENT_SECRET=<secret-token>"
 Environment="CONFIGFILE=/opt/discordbot/discordbot_config.json"
-ExecStart=/opt/discordbot/main.py
+ExecStart=/opt/discordbot/__main__.py
 EOF
 
 systemctl enable discordbot.service

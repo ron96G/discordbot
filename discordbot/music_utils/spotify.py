@@ -1,19 +1,23 @@
-import spotipy, logging, re
+import logging
+import re
+
+import spotipy
 
 SPOTIFY_MARKET = "DE"
 
-class Spotify():
+
+class Spotify:
     def __init__(self, service: spotipy.Spotify):
         self.service = service
-        self.log = logging.getLogger('svc')
-        self.id_re = re.compile(r'^[A-Za-z0-9]{22}$')
+        self.log = logging.getLogger("svc")
+        self.id_re = re.compile(r"^[A-Za-z0-9]{22}$")
 
     def __del__(self):
         pass
-    
+
     def is_spotify_url_or_id(self, url_or_id: str) -> bool:
-        is_url = 'spotify' in url_or_id
-        is_id =  bool(self.id_re.match(url_or_id))
+        is_url = "spotify" in url_or_id
+        is_id = bool(self.id_re.match(url_or_id))
         return is_url | is_id
 
     async def get_info(self, id_or_url: str):
@@ -22,7 +26,4 @@ class Spotify():
 
         self.log.debug(track)
 
-        return {
-            'artist': track['artists'][0]['name'],
-            'name': track['name']
-        }
+        return {"artist": track["artists"][0]["name"], "name": track["name"]}

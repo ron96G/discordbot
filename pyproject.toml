@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "discordbot"
+version = "0.1.0"
+description = "A simple discord bot for different things"
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+boto3 = "^1.20.37"
+"discord.py" = {extras = ["voice"], version = "^1.7.3"}
+google-api-python-client = "^2.35.0"
+youtube_dl = "^2021.12.17"
+spotipy = "^2.19.0"
+wikipedia = "^1.4.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+black = "^21.12b0"
+isort = "^5.10.1"
+mypy = "^0.931"
+pre-commit = "*"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

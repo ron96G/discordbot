@@ -7,3 +7,4 @@ ytdl
 *config.json
 
 __pycache__
+.mypy_cache
