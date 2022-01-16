@@ -51,5 +51,5 @@ class Wikipedia(commands.Cog):
         except Exception as e:
             self.log.error(f"failed command wikipedia.explain with: {e}")
             return await ctx.send(
-                f'Currently unable to explain "{title}". Please try again later'
+                f'Currently unable to explain "{title}". Please try again later or try a different topic.'
             )
