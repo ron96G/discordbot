@@ -29,9 +29,11 @@ class Youtube:
         try:
             res = req.execute()
             if len(res["items"]) > 0:
+                id = res["items"][0]["id"]["videoId"]
                 return {
-                    "url": YOUTUBE_VIDEO_BASE_URL + res["items"][0]["id"]["videoId"],
+                    "url": YOUTUBE_VIDEO_BASE_URL + id,
                     "title": res["items"][0]["snippet"]["title"],
+                    "thumbnail": f"https://img.youtube.com/vi/{id}/hqdefault.jpg",
                 }
 
         except HttpError as e:
@@ -43,4 +45,5 @@ class Youtube:
         return {
             "url": YOUTUBE_VIDEO_BASE_URL + "dQw4w9WgXcQ",
             "title": "Rick Astley - Never Gonna Give You Up (Official Music Video)",
+            "thumbnail": "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
         }

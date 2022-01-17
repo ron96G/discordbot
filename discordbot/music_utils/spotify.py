@@ -26,4 +26,8 @@ class Spotify:
 
         self.log.debug(track)
 
-        return {"artist": track["artists"][0]["name"], "name": track["name"]}
+        return {
+            "artist": track["artists"][0]["name"],
+            "name": track["name"],
+            "thumbnail": track["album"]["images"][0]["url"],
+        }

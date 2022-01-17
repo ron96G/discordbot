@@ -5,14 +5,13 @@ import os
 
 import boto3
 import spotipy
+from bot import Bot
+from cogs import Config, Func, Music, TextToSpeech, Wikipedia
 from discord.ext import commands
 from googleapiclient.discovery import build
-from spotipy.oauth2 import SpotifyClientCredentials
-
-from utils import ConfigMap
-from bot import Bot
 from music_utils import Spotify, Youtube
-from cogs import Config, Func, Music, TextToSpeech, Wikipedia
+from spotipy.oauth2 import SpotifyClientCredentials
+from utils import ConfigMap
 
 TOKEN = os.environ.get("DISCORD_SECRET_TOKEN", None)
 ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY_ID", None)

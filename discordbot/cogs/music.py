@@ -1,9 +1,8 @@
 import logging
 from datetime import datetime
 
+from cogs.func import Context
 from discord.ext import commands
-from discord.ext.commands.context import Context
-
 from music_utils.spotify import Spotify
 from music_utils.youtube import Youtube
 from music_utils.ytdl import YTDLSource
@@ -25,15 +24,21 @@ class Music(commands.Cog):
 
         data = None
         async with ctx.typing():
+
+            self.log.info(f"Checking if {query_or_url} is a youtube video")
+            self.log.info(self.spotify is not None)
+
             # convert query or spotify url to youtube url for streaming
             if self.spotify is not None and self.spotify.is_spotify_url_or_id(
                 query_or_url
             ):
+
                 params = await self.spotify.get_info(query_or_url)
                 data = await self.youtube.find_video_by_query(
                     f'{params["artist"]} {params["name"]}'
                 )
                 url = data["url"]
+                data["thumbnail"] = params["thumbnail"]
 
             # convert query to a youtube url for streaming
             elif self.youtube is not None and not self.youtube.is_yt_url(query_or_url):
@@ -47,19 +52,28 @@ class Music(commands.Cog):
             try:
                 self.log.info(f'Trying to {"stream" if stream else "download"} {url}')
                 _player = YTDLSource.from_url(url, loop=self.bot.loop, stream=stream)
+
             except Exception as e:
-                self.log.error(e)
                 raise commands.CommandError("failed to retrieve song")
 
             id = ctx.message.guild.id
             if not self.bot.queue.exists(id):
                 await self.bot.queue.register(id)
             pos = await self.bot.queue.put(
-                id, {"ctx": ctx, "player": _player, "time": datetime.now()}
+                id,
+                {
+                    "ctx": ctx,
+                    "player": _player,
+                    "time": datetime.now(),
+                    "thumbnail": data["thumbnail"] if "thumbnail" in data else None,
+                },
             )
-            return await ctx.message.reply(
-                f'Queued {data["title"] + " " if data else ""}at position {pos}'
-            )
+
+            await ctx.tick(True)
+            if pos > 1:
+                await ctx.message.reply(
+                    f'Queued {data["title"] + " " if data else ""}at position {pos}'
+                )
 
     @commands.command()
     async def play(self, ctx: Context, *, query_or_url: str):

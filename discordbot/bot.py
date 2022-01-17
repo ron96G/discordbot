@@ -1,15 +1,21 @@
+import asyncio
+import datetime
 import logging
 import mimetypes
 import os
 import traceback
 from typing import List
 
+import discord
 from cogs.func import Context
 from discord.errors import HTTPException, NotFound
 from discord.ext import commands
 from discord.message import Attachment, Message
 from utils.config import ConfigMap
 from utils.queue import BotQueue
+
+LEAVE_AFTER_INACTIVITY_DELAY = 120
+LEAVE_AFTER_INACTIVITY_DURATION = 600
 
 
 class Bot(commands.Bot):
@@ -33,15 +39,24 @@ class Bot(commands.Bot):
             if not self.config.exists(id):
                 self.config.set_defaults_for(id)
 
+        self.loop.create_task(self.leave_after_inactivity())
+
     async def get_context(self, message, *, cls=Context):
         return await super().get_context(message, cls=cls)
 
     async def on_command_error(
-        self, ctx: commands.Context, exception: commands.CommandError
+        self, ctx: commands.Context, error: commands.CommandError
     ):
         self.log.warn(
-            f'{ctx.guild.id}: "{ctx.author.display_name}" using "{ctx.command}" failed with: {exception}'
+            f'{ctx.guild.id}: "{ctx.author.display_name}" using "{ctx.command}" failed with: {error}'
         )
+
+        if isinstance(error, commands.CommandInvokeError):
+            await ctx.reply(
+                f"Your actions resulted in an backenderror: {error.original}"
+            )
+        else:
+            await ctx.reply(f"Your actions resulted in an backenderror: {error}")
 
     async def on_error(self, event_method, *args, **kwargs):
         self.log.error(f"Unknown error: {traceback.print_exc()}")
@@ -80,3 +95,45 @@ class Bot(commands.Bot):
         else:
             await ctx.send("You are not connected to a voice channel")
             raise commands.CommandError("user is not connected to a voice channel")
+
+    async def leave_after_inactivity(self):
+        marked_for_inactivity = {}
+
+        while not self.is_closed():
+            now = datetime.datetime.now()
+
+            for voice_client in self.voice_clients:
+                voice_client: discord.VoiceClient = voice_client
+
+                if not voice_client.is_playing():
+                    id = voice_client.guild.id
+                    if id not in marked_for_inactivity:
+                        self.log.info(f"Flagged voice_client of {id} for inactivity")
+                        marked_for_inactivity[id] = {
+                            "timestamp": now,
+                            "voice_client": voice_client,
+                        }
+
+            left = []
+            for id in marked_for_inactivity.keys():
+                if (
+                    marked_for_inactivity[id]["timestamp"]
+                    + datetime.timedelta(0, LEAVE_AFTER_INACTIVITY_DURATION)
+                    < now
+                ):
+                    # remove it due to inactivity
+                    self.log.info(
+                        f"Disconnecting voice_client of {id} due to inactivity"
+                    )
+                    voice_client: discord.VoiceClient = marked_for_inactivity[id][
+                        "voice_client"
+                    ]
+                    await asyncio.gather(
+                        voice_client.disconnect(), self.queue.deregister(id)
+                    )
+                    left.append(id)
+
+            for id in left:
+                del marked_for_inactivity[id]
+
+            await asyncio.sleep(LEAVE_AFTER_INACTIVITY_DELAY)

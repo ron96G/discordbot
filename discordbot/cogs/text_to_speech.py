@@ -5,6 +5,8 @@ from datetime import datetime
 from typing import Any, Union
 
 import discord
+from botocore.exceptions import BotoCoreError, ClientError, ValidationError
+from cogs.func import Context
 from discord.ext import commands
 
 ## See https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/polly.html#Polly.Client.synthesize_speech
@@ -69,9 +71,11 @@ class TextToSpeech(commands.Cog):
                 Text=message,
                 VoiceId=voice_id or self.voiceId,
             )
-        except Exception as e:
-            self.log.error(e)
-            raise commands.CommandError("failed to synthesize speech")
+
+        except ClientError as e:
+            raise commands.CommandError(f"failed to synthesize speech: {e}")
+        except (BotoCoreError, ValidationError) as e:
+            raise commands.CommandError(f"failed to synthesize speech: {e.fmt}")
 
         output = os.path.join(self.dir, f"{id}.mp3")
         if "AudioStream" in response:
@@ -86,7 +90,7 @@ class TextToSpeech(commands.Cog):
         return SynthesizeSpeechSource(discord.FFmpegPCMAudio(output, **ffmpeg_options))
 
     @commands.command()
-    async def say(self, ctx: commands.Context, *args):
+    async def say(self, ctx: Context, *args):
         """Let the bot talk to you"""
         if ctx.voice_client is None:
             await self.bot.join_author(ctx)
@@ -123,4 +127,6 @@ class TextToSpeech(commands.Cog):
                 id, {"ctx": ctx, "player": player, "time": datetime.now()}
             )
 
-            return await ctx.message.reply(f"Queued at position {pos}")
+            await ctx.tick(True)
+            if pos > 1:
+                await ctx.message.reply(f"Queued at position {pos}")
