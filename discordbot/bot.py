@@ -94,7 +94,6 @@ class Bot(commands.Bot):
             await ctx.author.voice.channel.connect()
         else:
             await ctx.send("You are not connected to a voice channel")
-            raise commands.CommandError("user is not connected to a voice channel")
 
     async def leave_after_inactivity(self):
         marked_for_inactivity = {}

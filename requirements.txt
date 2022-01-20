@@ -1,6 +1,0 @@
-boto3
-discord.py[voice]
-google-api-python-client
-youtube-dl
-spotipy
-wikipedia
