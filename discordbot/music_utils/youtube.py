@@ -8,10 +8,12 @@ YOUTUBE_VIDEO_BASE_URL = "https://www.youtube.com/watch?v="
 YOUTUBE_VIDEO_ID_REGEX = re.compile(r"^.*v=([^&]*).*$")
 YOUTUBE_PLAYLIST_ID_REGEX = re.compile(r"^.*list=([^&]*).*$")
 
+
 class YouTubeError(Exception):
-    def __init__(self, msg, thrown = None):
+    def __init__(self, msg, thrown=None):
         super().__init__(msg)
         self.thrown = thrown
+
 
 class Youtube:
     def __init__(self, service):
@@ -82,7 +84,7 @@ class Youtube:
             self.log.error(
                 f"failed to fetch videos failed with {e.status_code}: {e.error_details}"
             )
-            raise YouTubeError('Failed to fetch videos', e)
+            raise YouTubeError("Failed to fetch videos", e)
 
         return {
             "url": YOUTUBE_VIDEO_BASE_URL + "dQw4w9WgXcQ",

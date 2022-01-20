@@ -2,15 +2,15 @@ import asyncio
 import logging
 from asyncio.queues import Queue
 from asyncio.tasks import Task
-from datetime import datetime, timedelta
 from typing import Dict, Union
 
 import discord
+import music_utils
+from cogs.func import Context
 from cogs.text_to_speech import SynthesizeSpeechSource
 from discord.errors import DiscordException
 from discord.ext import commands
 from discord.voice_client import VoiceClient
-from music_utils.ytdl import YTDLSource
 
 # in seconds
 VOICE_CLIENT_INACTIVITY_TIMEOUT = 60
@@ -68,9 +68,6 @@ class BotQueue:
 
     def exists(self, identifier: str):
         exists = identifier in self._queueDict
-        self.log.info(
-            f'Queue for {identifier} {"exists" if exists else "does not exist"}'
-        )
         return exists
 
     async def clear(self, identifier: str):
@@ -119,9 +116,10 @@ class BotQueue:
 
         voice_client = self.find_relevant_voice_client(guild_id)
 
-        def handle_error(e: Exception, ctx: commands.Context):
-            log.error(f"{guild_id}: Error in queue_runner: {e}")
-            ctx.send(f"**Failed to play**: {repr(e)}")
+        def handle_error(e: Exception, ctx: Context):
+            msg = music_utils.format_exception(e)
+            log.warn(f"{guild_id}: Error in queue_runner: {msg}")
+            ctx.reply_formatted_error(f"Failed to play: {msg}")
 
         while not self.bot.is_closed():
             if not voice_client.is_playing():
@@ -135,12 +133,12 @@ class BotQueue:
 
                 if item is not None and voice_client is not None:
 
-                    ctx: commands.Context = item["ctx"]
+                    ctx: Context = item["ctx"]
                     async with ctx.typing():
                         try:
                             log.debug(f"{guild_id}: Waiting for player to be ready")
                             player: Union[
-                                YTDLSource, SynthesizeSpeechSource
+                                music_utils.YTDLSource, SynthesizeSpeechSource
                             ] = await item["player"]
                             if player is None:
                                 raise DiscordException(
@@ -148,11 +146,10 @@ class BotQueue:
                                 )
 
                             if player.error is not None:
-                                log.warn(
-                                    f"{guild_id}: Player exception: {player.error}"
-                                )
-                                await ctx.message.reply(
-                                    f"**Failed to play**: {repr(player.error)}"
+                                msg = music_utils.format_exception(player.error)
+                                log.warn(f"{guild_id}: Player exception: {msg}")
+                                await ctx.reply_formatted_error(
+                                    f"Failed to play: {msg}"
                                 )
 
                             else:
@@ -166,30 +163,18 @@ class BotQueue:
                                     after=lambda e: handle_error(e, ctx) if e else None,
                                 )
 
-                                embed = discord.Embed(
+                                await ctx.reply_formatted_msg(
+                                    f'Now playing "{track}"',
                                     title="Bottich Audio Player",
-                                    type="rich",
-                                    description=f'Now playing "{track}"',
-                                    color=discord.Color.dark_gold(),
+                                    thumbnail_url=item["thumbnail"],
                                 )
-                                embed.set_author(
-                                    name=ctx.author.name, icon_url=ctx.author.avatar_url
-                                )
-
-                                if (
-                                    "thumbnail" in item
-                                    and item["thumbnail"] is not None
-                                ):
-                                    embed.set_thumbnail(url=item["thumbnail"])
-
-                                await ctx.send(embed=embed)
 
                         except Exception as e:
                             log.warn(
                                 f"{guild_id}: Failed to play audio in queue {guild_id}: {e}"
                             )
-                            await ctx.send(
-                                f"Failed to play {track} requested by {author}. Skipping..."
+                            await ctx.reply_formatted_error(
+                                f"Failed to play {track}. Skipping..."
                             )
 
                         finally:

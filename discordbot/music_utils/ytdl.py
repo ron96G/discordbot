@@ -5,7 +5,7 @@ from typing import Union
 
 import discord
 import youtube_dl
-from youtube_dl.utils import DownloadError, YoutubeDLError
+from youtube_dl.utils import DownloadError, ExtractorError, YoutubeDLError
 
 YTDL_OUTPUT_DIR = "./ytdl/"
 
@@ -80,3 +80,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
         return loop.run_in_executor(
             None, lambda: YTDLSource._from_url(url=url, stream=stream)
         )
+
+
+def format_exception(e: Exception) -> Union[str, Exception]:
+    return str(e).replace("\n", ". ")

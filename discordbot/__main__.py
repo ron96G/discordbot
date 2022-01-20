@@ -78,5 +78,5 @@ if __name__ == "__main__":
         format="[%(asctime)s] [%(pathname)s:%(lineno)d] %(levelname)s - %(message)s",
         datefmt="%Y-%m-%dT%H:%M:%S",
     )
-    
+
     main()

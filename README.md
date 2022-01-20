@@ -6,7 +6,10 @@
 | :--------------- | :------ |
 | !Help command | ✅ |
 | Play music from Youtube | ✅ |
+| Play music from Youtube playlist | ❌ |
 | Play music from Spotify | ✅ |
+| Play music from Spotify album | ✅ |
+| Play music from Spotify playlist | ✅ |
 | Play music by query | ✅ |
 | Play music from local filesystem | ❌ |
 | Queueing of audio sources | ✅ |
@@ -17,8 +20,3 @@
 | Persisted configuration managed per connected guild | ✅ |
 | Logging | ✅ |
 | Installation script for e. g. AWS EC2 | ✅ |
-
-## Known Limitations
-
-- Many exceptions are not handled properly (possible fix by implementin exception handler)
-- Bot does not disconnect automatically after a certain duration of inactivity

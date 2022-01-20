@@ -44,19 +44,15 @@ class Bot(commands.Bot):
     async def get_context(self, message, *, cls=Context):
         return await super().get_context(message, cls=cls)
 
-    async def on_command_error(
-        self, ctx: commands.Context, error: commands.CommandError
-    ):
+    async def on_command_error(self, ctx: Context, error: commands.CommandError):
         self.log.warn(
             f'{ctx.guild.id}: "{ctx.author.display_name}" using "{ctx.command}" failed with: {error}'
         )
 
         if isinstance(error, commands.CommandInvokeError):
-            await ctx.reply(
-                f"Your actions resulted in an backenderror: {error.original}"
-            )
+            await ctx.reply_formatted_error(error.original)
         else:
-            await ctx.reply(f"Your actions resulted in an backenderror: {error}")
+            await ctx.reply_formatted_error(error)
 
     async def on_error(self, event_method, *args, **kwargs):
         self.log.error(f"Unknown error: {traceback.print_exc()}")

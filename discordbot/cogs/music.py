@@ -2,14 +2,17 @@ import logging
 from datetime import datetime
 from typing import Dict
 
+import music_utils
 from cogs.func import Context
 from discord.ext import commands
-import music_utils
 
 
 class Music(commands.Cog):
     def __init__(
-        self, bot: commands.Bot, youtube: music_utils.Youtube = None, spotify: music_utils.Spotify = None
+        self,
+        bot: commands.Bot,
+        youtube: music_utils.Youtube = None,
+        spotify: music_utils.Spotify = None,
     ):
         self.bot = bot
         self.log = logging.getLogger("cog")
@@ -23,7 +26,9 @@ class Music(commands.Cog):
         url = data["url"]
         try:
             self.log.info(f'Trying to {"stream" if stream else "download"} {url}')
-            _player = music_utils.YTDLSource.from_url(url, loop=self.bot.loop, stream=stream)
+            _player = music_utils.YTDLSource.from_url(
+                url, loop=self.bot.loop, stream=stream
+            )
 
         except Exception as e:
             self.log.warn(f'Failed to retrieve song "{url}": {e}')
@@ -56,6 +61,17 @@ class Music(commands.Cog):
             if self.spotify is not None and self.spotify.is_spotify_url(query_or_url):
                 self.log.info(f"{query_or_url} is a spotify url")
                 try:
+                    if stream and (
+                        self.spotify.is_spotify_album(query_or_url)
+                        or self.spotify.is_spotify_playlist(query_or_url)
+                    ):
+                        self.log.info(
+                            'Albums and playlists are only supported in "play" mode'
+                        )
+                        return await ctx.reply_formatted_error(
+                            f'Albums and playlists are only supported in "play" mode'
+                        )
+
                     tracks = await self.spotify.get_info(query_or_url)
                     self.log.info(f"Found {len(tracks)} tracks")
 
@@ -69,11 +85,15 @@ class Music(commands.Cog):
 
                 except music_utils.SpotifyError as e:
                     self.log.warn(f"Failed to get spotify info: {e}")
-                    return await ctx.send(f'Failed to play "{query_or_url}": {e}')
+                    return await ctx.reply_formatted_error(
+                        f'Failed to play "{query_or_url}": {e}'
+                    )
 
                 except music_utils.YouTubeError as e:
-                    self.log.warn(f'Failed to get youtube info: {e}')
-                    return await ctx.send(f'Failed to play "{query_or_url}": {e}')
+                    self.log.warn(f"Failed to get youtube info: {e}")
+                    return await ctx.reply_formatted_error(
+                        f'Failed to play "{query_or_url}": {e}'
+                    )
 
             # convert query to a youtube url for streaming
             elif self.youtube is not None and not self.youtube.is_yt_url(query_or_url):
@@ -82,18 +102,22 @@ class Music(commands.Cog):
                     data.append(await self.youtube.find_video_by_query(query_or_url))
 
                 except music_utils.YouTubeError as e:
-                    self.log.warn(e)
-                    return await ctx.send(f'Failed to play "{query_or_url}": {e}')
+                    self.log.warn(f"Failed to get youtube info: {e}")
+                    return await ctx.reply_formatted_error(
+                        f'Failed to play "{query_or_url}": {e}'
+                    )
 
             # is already a valid youtube url
             elif self.youtube is not None and self.youtube.is_yt_url(query_or_url):
                 self.log.info(f"{query_or_url} is a youtube url")
                 try:
                     data.append(await self.youtube.find_video_by_url(query_or_url))
-                    
+
                 except music_utils.YouTubeError as e:
                     self.log.warn(e)
-                    return await ctx.send(f'Failed to play "{query_or_url}": {e}')
+                    return await ctx.reply_formatted_error(
+                        f'Failed to play "{query_or_url}": {e}'
+                    )
 
             else:
                 self.log.warn(f"{query_or_url} is not known")
@@ -106,12 +130,7 @@ class Music(commands.Cog):
             await ctx.tick(True)
 
             if len(data) > 1:
-                return await ctx.message.reply(f"Queued {len(data)} songs")
-
-            if pos > 1:
-                await ctx.message.reply(
-                    f'Queued {data["title"] + " " if data else ""}at position {pos}'
-                )
+                return await ctx.reply_formatted_msg(f"Queued {len(data)} songs")
 
     @commands.command()
     async def play(self, ctx: Context, *, query_or_url: str):
