@@ -30,7 +30,7 @@ def main():
 
     bot = Bot(
         command_prefix=commands.when_mentioned_or("!"),
-        description="Bot example",
+        description="Bottich",
         configmap=configmap,
     )
 

@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import spotipy
 
@@ -8,7 +8,6 @@ SPOTIFY_MARKET = "DE"
 SPOTIFY_TRACK_ID_REGEX = re.compile(r".*spotify\.com\/track\/(.*?)\?si=.*")
 SPOTIFY_ALBUM_ID_REGEX = re.compile(r".*spotify\.com\/album\/(.*?)\?si=.*")
 SPOTIFY_PLAYLIST_ID_REGEX = re.compile(r".*spotify\.com\/playlist\/(.*?)\?si=.*")
-MAX_ENTRIES = 10
 
 
 class SpotifyError(Exception):
@@ -19,8 +18,9 @@ class SpotifyError(Exception):
 
 # See https://developer.spotify.com/documentation/web-api/reference/#/
 class Spotify:
-    def __init__(self, service: spotipy.Spotify):
+    def __init__(self, service: spotipy.Spotify, max_entries: int = 10):
         self.service = service
+        self.max_entries = max_entries
         self.log = logging.getLogger("svc")
 
     def is_spotify_url(self, url: str) -> bool:
@@ -86,11 +86,11 @@ class Spotify:
 
         playlist_tracks = [t["track"] for t in playlist["tracks"]["items"]]
         tracks = []
-        if len(playlist_tracks) > MAX_ENTRIES:
+        if len(playlist_tracks) > self.max_entries:
             self.log.warn(
-                f"Playlist has more than {MAX_ENTRIES} tracks, only the first {MAX_ENTRIES} will be played"
+                f"Playlist has more than {self.max_entries} tracks, only the first {self.max_entries} will be played"
             )
-            playlist_tracks = playlist_tracks[: MAX_ENTRIES - 1]
+            playlist_tracks = playlist_tracks[: self.max_entries]
 
         for track in playlist_tracks:
             tracks.append(
@@ -119,11 +119,11 @@ class Spotify:
         tracks = []
         album_thumbnail = album["images"][0]["url"]
 
-        if len(album_tacks) > MAX_ENTRIES:
+        if len(album_tacks) > self.max_entries:
             self.log.warn(
-                f"Album has more than {MAX_ENTRIES} tracks, only the first {MAX_ENTRIES} will be played"
+                f"Album has more than {self.max_entries} tracks, only the first {self.max_entries} will be played"
             )
-            album_tacks = album_tacks[: MAX_ENTRIES - 1]
+            album_tacks = album_tacks[: self.max_entries]
 
         for track in album_tacks:
             tracks.append(
