@@ -122,17 +122,19 @@ class BotQueue:
             ctx.reply_formatted_error(f"Failed to play: {msg}")
 
         while not self.bot.is_closed():
-            if not voice_client.is_playing():
 
-                if voice_client is None or not voice_client.is_connected():
-                    # there might be a new voice_client that is used...
-                    voice_client = self.find_relevant_voice_client(guild_id)
+            if voice_client is None or not voice_client.is_connected():
+                voice_client = self.find_relevant_voice_client(guild_id)
+
+            if voice_client is not None and not voice_client.is_playing():                   
 
                 log.info(f"{guild_id}: Getting new item from queue")
                 item = await queue.get()  # this blocks until an item is available
 
-                if item is not None and voice_client is not None:
+                if not voice_client.is_connected():
+                    voice_client = self.find_relevant_voice_client(guild_id)
 
+                if voice_client is not None:
                     ctx: Context = item["ctx"]
                     async with ctx.typing():
                         try:
@@ -140,6 +142,7 @@ class BotQueue:
                             player: Union[
                                 music_utils.YTDLSource, SynthesizeSpeechSource
                             ] = await item["player"]
+                            
                             if player is None:
                                 raise DiscordException(
                                     "Player could not be constructed"
@@ -166,7 +169,7 @@ class BotQueue:
                                 await ctx.reply_formatted_msg(
                                     f'Now playing "{track}"',
                                     title="Bottich Audio Player",
-                                    thumbnail_url=item["thumbnail"],
+                                    thumbnail_url=item["thumbnail"] if hasattr(item, "thumbnail") else None,
                                 )
 
                         except Exception as e:

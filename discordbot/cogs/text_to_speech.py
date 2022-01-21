@@ -90,19 +90,13 @@ class TextToSpeech(commands.Cog):
         return SynthesizeSpeechSource(discord.FFmpegPCMAudio(output, **ffmpeg_options))
 
     @commands.command()
-    async def say(self, ctx: Context, *args):
+    async def say(self, ctx: Context, *, message: str):
         """Let the bot talk to you"""
         if ctx.voice_client is None:
             await self.bot.join_author(ctx)
 
-        message = ""
-        if isinstance(args, str):
-            message = args
-        else:
-            message = " ".join(args)
-
         if len(message) > self.max_characters:
-            return await ctx.send(
+            return await ctx.reply_formatted_error(
                 f"Length of message cannot exceed {self.max_characters}"
             )
 

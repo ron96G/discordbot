@@ -34,3 +34,13 @@ class Config(commands.Cog):
             key = args[0]
             val = self.bot.config.get_config_for(id, key)
             return await ctx.send(f"Current config for {key} is {val}")
+
+    @commands.Command
+    async def reset(self, ctx: Context):
+        """Reset the config to default
+        """
+        id = ctx.message.guild.id
+        if self.bot.config.exists(id):
+            self.bot.config.remove_config_for(id)
+            self.bot.config.set_defaults_for(id)
+        return await ctx.tick(True)
