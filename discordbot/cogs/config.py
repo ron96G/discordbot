@@ -3,7 +3,7 @@ import logging
 from cogs.func import Context
 from discord.ext import commands
 
-from utils.config import ConfigError
+from utils.config import ConfigValidationError
 
 
 class Config(commands.Cog):
@@ -24,7 +24,7 @@ class Config(commands.Cog):
                 self.log.info(f"{id} - Updating config with {key}={val}")
                 self.bot.config.update_config_for(id, key, val)
 
-        except ConfigError as e:
+        except ConfigValidationError as e:
             return await ctx.reply_formatted_error(f"{e}", error_title="Config Error")
 
         return await ctx.tick(True)

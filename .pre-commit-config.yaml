@@ -1,0 +1,19 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.5.0
+    hooks:
+      - id: check-added-large-files
+  - repo: local
+    hooks:
+      - id: format
+        name: format
+        entry: sh scripts/format.sh
+        language: system
+        always_run: true
+        pass_filenames: false
+      - id: lint
+        name: lint
+        entry: sh scripts/lint.sh
+        language: system
+        always_run: true
+        pass_filenames: false

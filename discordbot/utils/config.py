@@ -34,6 +34,9 @@ VALID_CONFIG_PARAM_KEYS = {
 class ConfigError(Exception):
     pass
 
+class ConfigValidationError(ConfigError):
+    pass
+
 class ConfigMap:
     def __init__(self, configs: List[Dict[str, Any]], configfile_name: str = None):
         self.log = logging.getLogger("config")
@@ -81,11 +84,11 @@ class ConfigMap:
 
     def is_valid_config_parameter(self, key: str, val: str) -> bool:
         if not key in VALID_CONFIG_PARAM_KEYS.keys():
-            raise ConfigError(f"'{key}' is not a valid config parameter. Try one of {VALID_CONFIG_PARAM_KEYS}")
+            raise ConfigValidationError(f"'{key}' is not a valid config parameter. Try one of {VALID_CONFIG_PARAM_KEYS}")
         else:
             val_info = VALID_CONFIG_PARAM_KEYS[key]
             if not val_info["valid_inputs"](val):
-                raise ConfigError(f"'{val}' is not a valid value for '{key}': {val_info['description']}")
+                raise ConfigValidationError(f"'{val}' is not a valid value for '{key}': {val_info['description']}")
         return True
 
     @classmethod
