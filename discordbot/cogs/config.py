@@ -3,6 +3,8 @@ import logging
 from cogs.func import Context
 from discord.ext import commands
 
+from utils.config import ConfigError
+
 
 class Config(commands.Cog):
     def __init__(self, bot):
@@ -10,15 +12,20 @@ class Config(commands.Cog):
         self.bot = bot
 
     @commands.Command
-    async def set(self, ctx: Context, key: str, val: str):
+    async def set(self, ctx: Context, key: str, *, val: str):
         """Set a config parameter for your bot instance"""
         id = ctx.message.guild.id
-        if not self.bot.config.exists(id):
-            self.log.info(f"{id} - Setting initial config with {key}={val}")
-            self.bot.config.add_config_for(id, {key: val})
-        else:
-            self.log.info(f"{id} - Updating config with {key}={val}")
-            self.bot.config.update_config_for(id, key, val)
+        val = val.strip()
+        try:
+            if not self.bot.config.exists(id):
+                self.log.info(f"{id} - Setting initial config with {key}={val}")
+                self.bot.config.add_config_for(id, {key: val})
+            else:
+                self.log.info(f"{id} - Updating config with {key}={val}")
+                self.bot.config.update_config_for(id, key, val)
+
+        except ConfigError as e:
+            return await ctx.reply_formatted_error(f"{e}", error_title="Config Error")
 
         return await ctx.tick(True)
 

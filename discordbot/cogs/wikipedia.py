@@ -41,7 +41,7 @@ class Wikipedia(commands.Cog):
             await ctx.send(f"{page[:until_last_sentence]}...")
 
             if self.t2s is not None:
-                await self.t2s.say(ctx, page[:until_last_sentence])
+                await self.t2s.say(ctx=ctx, message=page[:until_last_sentence])
 
         except wikipedia.DisambiguationError as e:
             return await ctx.send(f"{query} may refer to {e.options}")
