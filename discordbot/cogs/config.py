@@ -2,7 +2,6 @@ import logging
 
 from cogs.func import Context
 from discord.ext import commands
-
 from utils.config import ConfigValidationError
 
 
@@ -44,8 +43,7 @@ class Config(commands.Cog):
 
     @commands.Command
     async def reset(self, ctx: Context):
-        """Reset the config to default
-        """
+        """Reset the config to default"""
         id = ctx.message.guild.id
         if self.bot.config.exists(id):
             self.bot.config.remove_config_for(id)

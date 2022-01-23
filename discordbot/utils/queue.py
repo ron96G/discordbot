@@ -126,7 +126,7 @@ class BotQueue:
             if voice_client is None or not voice_client.is_connected():
                 voice_client = self.find_relevant_voice_client(guild_id)
 
-            if voice_client is not None and not voice_client.is_playing():                   
+            if voice_client is not None and not voice_client.is_playing():
 
                 log.info(f"{guild_id}: Getting new item from queue")
                 item = await queue.get()  # this blocks until an item is available
@@ -142,7 +142,7 @@ class BotQueue:
                             player: Union[
                                 music_utils.YTDLSource, SynthesizeSpeechSource
                             ] = await item["player"]
-                            
+
                             if player is None:
                                 raise DiscordException(
                                     "Player could not be constructed"
@@ -169,7 +169,9 @@ class BotQueue:
                                 await ctx.reply_formatted_msg(
                                     f'Now playing "{track}"',
                                     title="Bottich Audio Player",
-                                    thumbnail_url=item["thumbnail"] if hasattr(item, "thumbnail") else None,
+                                    thumbnail_url=item["thumbnail"]
+                                    if hasattr(item, "thumbnail")
+                                    else None,
                                 )
 
                         except Exception as e:
