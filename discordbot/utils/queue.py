@@ -170,7 +170,7 @@ class BotQueue:
                                     f'Now playing "{track}"',
                                     title="Bottich Audio Player",
                                     thumbnail_url=item["thumbnail"]
-                                    if hasattr(item, "thumbnail")
+                                    if "thumbnail" in item
                                     else None,
                                 )
 
