@@ -8,3 +8,10 @@ ytdl
 
 __pycache__
 .mypy_cache
+
+
+infra
+.terraform*
+user_data.sh
+*.tfstate
+*.backup
