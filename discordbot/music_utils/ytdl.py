@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import os
-from typing import Union
+from typing import Dict, Union
 
 import discord
 import youtube_dl
@@ -15,7 +15,7 @@ if not os.path.exists(YTDL_OUTPUT_DIR):
 # Suppress noise about console usage from errors
 youtube_dl.utils.bug_reports_message = lambda: ""
 
-ytdl_format_options = {
+YTDL_FORMAT_OPTS = {
     "format": "bestaudio/best",
     "outtmpl": YTDL_OUTPUT_DIR + "%(extractor)s-%(id)s-%(title)s.%(ext)s",
     "restrictfilenames": True,
@@ -29,9 +29,12 @@ ytdl_format_options = {
     "source_address": "0.0.0.0",  # bind to ipv4 since ipv6 addresses cause issues sometimes
 }
 
-ffmpeg_options = {"options": "-vn"}
+FFMPEG_OPTS = {
+    "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+    "options": "-vn",
+}
 
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
+ytdl = youtube_dl.YoutubeDL(YTDL_FORMAT_OPTS)
 
 # Based on https://github.com/Rapptz/discord.py/blob/45d498c1b76deaf3b394d17ccf56112fa691d160/examples/basic_voice.py#L33
 class YTDLSource(discord.PCMVolumeTransformer):
@@ -41,7 +44,14 @@ class YTDLSource(discord.PCMVolumeTransformer):
     data: dict
     error: Union[YoutubeDLError, str, None]
 
-    def __init__(self, original, *, data, error: YoutubeDLError = None, volume=0.5):
+    def __init__(
+        self,
+        original,
+        *,
+        data: Dict[str, str],
+        error: YoutubeDLError = None,
+        volume=0.5,
+    ):
 
         self.log = logging.getLogger("ytdl_source")
         if error is not None:
@@ -66,7 +76,7 @@ class YTDLSource(discord.PCMVolumeTransformer):
                 data = data["entries"][0]
 
             filename = data["url"] if stream else ytdl.prepare_filename(data)
-            return cls(discord.FFmpegPCMAudio(filename, **ffmpeg_options), data=data)
+            return cls(discord.FFmpegPCMAudio(filename, **FFMPEG_OPTS), data=data)
 
         except DownloadError as e:
             return cls(None, data={}, error=e)

@@ -6,21 +6,40 @@ import os
 import boto3
 import spotipy
 from bot import Bot
-from cogs import Config, Func, Music, TextToSpeech, Wikipedia
+from cogs import Config, Debugging, Func, Music, TextToSpeech, Wikipedia
 from discord.ext import commands
 from googleapiclient.discovery import build
-from music_utils import Spotify, Youtube
+from music_utils import Spotify, Twitch, Youtube
 from spotipy.oauth2 import SpotifyClientCredentials
-from utils import ConfigMap
+from twitchAPI.twitch import Twitch as TwitchAPI
+from utils import ConfigMap, ConfigStore, install
 
-TOKEN = os.environ.get("DISCORD_SECRET_TOKEN", None)
-ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY_ID", None)
-SECRET_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY", None)
+CONFIG_VERSION = os.environ.get("CONFIG_VERSION", None)
+CONFIG_TYPE = os.environ.get("CONFIG_TYPE", "s3")
+if CONFIG_TYPE == "s3":
+    config = ConfigStore.s3(CONFIG_VERSION)
+elif CONFIG_TYPE == "env_file":
+    config = ConfigStore.env_file(".env")
+else:
+    config = ConfigStore()
 
-YOUTUBE_API_KEY = os.environ.get("YOUTUBE_API_KEY", None)
+config.set_in_env()
 
-SPOTIFY_CLIENT_ID = os.environ.get("SPOTIFY_CLIENT_ID", None)
-SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET", None)
+DEBUG = config.get("DEBUG") in ["true", "True"]
+TOKEN = config.get("DISCORD_SECRET_TOKEN")
+
+FFMPEG_VERSION = config.get("FFMPEG_VERSION", fallback="5.1.1")
+
+ACCESS_KEY = config.get("AWS_ACCESS_KEY_ID")
+SECRET_KEY = config.get("AWS_SECRET_ACCESS_KEY")
+
+YOUTUBE_API_KEY = config.get("YOUTUBE_API_KEY")
+
+SPOTIFY_CLIENT_ID = config.get("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = config.get("SPOTIFY_CLIENT_SECRET")
+
+TWITCH_CLIENT_ID = config.get("TWITCH_CLIENT_ID")
+TWITCH_CLIENT_SECRET = config.get("TWITCH_CLIENT_SECRET")
 
 
 def main():
@@ -64,11 +83,21 @@ def main():
         service = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
         youtube = Youtube(service)
 
-    bot.add_cog(Music(bot, youtube, spotify))
+    # Twitch
+    # TwitchAPI is only used to fetch meta information like Twitch thumbnail and title
+    ## Therefore, it is not required to stream
+    twitch = Twitch(TwitchAPI(TWITCH_CLIENT_ID, TWITCH_CLIENT_SECRET))
+
+    bot.add_cog(Music(bot, youtube, spotify, twitch))
+
+    if DEBUG:
+        bot.add_cog(Debugging(bot, youtube, spotify, twitch))
+
     bot.run(TOKEN)
 
     del spotify
     del youtube
+    del twitch
 
 
 if __name__ == "__main__":
@@ -79,4 +108,5 @@ if __name__ == "__main__":
         datefmt="%Y-%m-%dT%H:%M:%S",
     )
 
+    install(FFMPEG_VERSION, force=False)
     main()

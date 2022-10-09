@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from shutil import which
 from typing import Dict
 
 import music_utils
@@ -7,32 +8,54 @@ from cogs.func import Context
 from discord.ext import commands
 
 
+def is_ffmpeg_installed():
+    return which("ffmpeg") is not None
+
+
 class Music(commands.Cog):
+
+    log = logging.getLogger("cog")
+
     def __init__(
         self,
         bot: commands.Bot,
         youtube: music_utils.Youtube = None,
         spotify: music_utils.Spotify = None,
+        twitch: music_utils.Twitch = None,
     ):
         self.bot = bot
-        self.log = logging.getLogger("cog")
         self.youtube = youtube
         self.spotify = spotify
+        self.twitch = twitch
+        self.log.info(
+            f"Starting Music-Cog {'with' if youtube else 'without'} youtube plugin"
+        )
+        self.log.info(
+            f"Starting Music-Cog {'with' if spotify else 'without'} spotify plugin"
+        )
+        self.log.info(
+            f"Starting Music-Cog {'with' if twitch else 'without'} twitch plugin"
+        )
 
-    async def enqueue_track(
+    async def enqueue_youtube_track(
         self, ctx: Context, data: Dict[str, str], stream: bool = True
-    ) -> int:
-
+    ):
         url = data["url"]
         try:
             self.log.info(f'Trying to {"stream" if stream else "download"} {url}')
-            _player = music_utils.YTDLSource.from_url(
+            player = music_utils.YTDLSource.from_url(
                 url, loop=self.bot.loop, stream=stream
             )
 
         except Exception as e:
             self.log.warn(f'Failed to retrieve song "{url}": {e}')
             raise commands.CommandError("failed to retrieve song")
+
+        await self.enqueue_track(ctx, player, data, stream)
+
+    async def enqueue_track(
+        self, ctx: Context, player, data: Dict[str, str], stream: bool = True
+    ) -> int:
 
         id = ctx.message.guild.id
         if not self.bot.queue.exists(id):
@@ -41,7 +64,7 @@ class Music(commands.Cog):
             id,
             {
                 "ctx": ctx,
-                "player": _player,
+                "player": player,
                 "time": datetime.now(),
                 "thumbnail": data["thumbnail"] if "thumbnail" in data else None,
             },
@@ -49,6 +72,11 @@ class Music(commands.Cog):
         return pos
 
     async def play_tracks(self, ctx: Context, query_or_url: str, stream: bool = True):
+
+        if not is_ffmpeg_installed():
+            return await ctx.reply_formatted_error(
+                f"Internal Server Error: Missing required ffmpeg lib"
+            )
 
         if ctx.voice_client is None:
             await self.bot.join_author(ctx)
@@ -124,8 +152,9 @@ class Music(commands.Cog):
                 raise commands.CommandError("Unknown query or url")
 
             # append all videos to queue
-            for _data in data:
-                pos = await self.enqueue_track(ctx, _data, stream)
+            if len(data) > 0:
+                for _data in data:
+                    pos = await self.enqueue_youtube_track(ctx, _data, stream)
 
             await ctx.tick(True)
 

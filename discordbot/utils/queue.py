@@ -4,7 +4,6 @@ from asyncio.queues import Queue
 from asyncio.tasks import Task
 from typing import Dict, Union
 
-import discord
 import music_utils
 from cogs.func import Context
 from cogs.text_to_speech import SynthesizeSpeechSource
