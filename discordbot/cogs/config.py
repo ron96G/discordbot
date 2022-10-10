@@ -1,8 +1,8 @@
 import logging
 
-from cogs.func import Context
+from common.config import ConfigValidationError
+from common.context import Context
 from discord.ext import commands
-from utils.config import ConfigValidationError
 
 
 class Config(commands.Cog):

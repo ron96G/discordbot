@@ -6,7 +6,7 @@ from typing import Any, Union
 
 import discord
 from botocore.exceptions import BotoCoreError, ClientError, ValidationError
-from cogs.func import Context
+from common.context import Context
 from discord.ext import commands
 
 ## See https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/polly.html#Polly.Client.synthesize_speech

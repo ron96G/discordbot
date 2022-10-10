@@ -4,6 +4,8 @@ from typing import Dict, List
 
 import spotipy
 
+from .track import SpotifyTrackInfo
+
 SPOTIFY_MARKET = "DE"
 SPOTIFY_TRACK_ID_REGEX = re.compile(r".*spotify\.com\/track\/(.*?)\?si=.*")
 SPOTIFY_ALBUM_ID_REGEX = re.compile(r".*spotify\.com\/album\/(.*?)\?si=.*")
@@ -16,12 +18,13 @@ class SpotifyError(Exception):
         self.thrown = thrown
 
 
-# See https://developer.spotify.com/documentation/web-api/reference/#/
-class Spotify:
+class SpotifyService:
+
+    log = logging.getLogger("svc")
+
     def __init__(self, service: spotipy.Spotify, max_entries: int = 10):
         self.service = service
         self.max_entries = max_entries
-        self.log = logging.getLogger("svc")
 
     def is_spotify_url(self, url: str) -> bool:
         return (
@@ -39,8 +42,8 @@ class Spotify:
     def is_spotify_playlist(self, url: str) -> bool:
         return bool(SPOTIFY_PLAYLIST_ID_REGEX.match(url))
 
-    async def get_info(self, url: str) -> List[Dict[str, str]]:
-        tracks = []
+    async def get_info(self, url: str) -> List[SpotifyTrackInfo]:
+        tracks: List[SpotifyTrackInfo] = []
         if self.is_spotify_track(url):
             tracks.append(await self.get_track_info(url))
 
@@ -55,7 +58,7 @@ class Spotify:
 
         return tracks
 
-    async def get_track_info(self, id_or_url: str) -> Dict[str, str]:
+    async def get_track_info(self, id_or_url: str) -> SpotifyTrackInfo:
         self.log.info(f'Searching spotify for track "{id_or_url}"')
         try:
             track = self.service.track(id_or_url, market=SPOTIFY_MARKET)
@@ -65,13 +68,14 @@ class Spotify:
 
         self.log.info(f'Found track "{track["name"]}"')
 
-        return {
-            "artist": track["artists"][0]["name"],
-            "name": track["name"],
-            "thumbnail": track["album"]["images"][0]["url"],
-        }
+        return SpotifyTrackInfo(
+            id_or_url,
+            track["artists"][0]["name"],
+            track["name"],
+            track["album"]["images"][0]["url"],
+        )
 
-    async def get_playlist_tracks_info(self, id_or_url: str) -> List[Dict[str, str]]:
+    async def get_playlist_tracks_info(self, id_or_url: str) -> List[SpotifyTrackInfo]:
         self.log.info(f'Searching spotify for playlist "{id_or_url}"')
 
         try:
@@ -85,7 +89,8 @@ class Spotify:
             raise SpotifyError(f"failed to get playlist {id_or_url}", e)
 
         playlist_tracks = [t["track"] for t in playlist["tracks"]["items"]]
-        tracks = []
+        tracks: List[SpotifyTrackInfo] = []
+
         if len(playlist_tracks) > self.max_entries:
             self.log.warn(
                 f"Playlist has more than {self.max_entries} tracks, only the first {self.max_entries} will be played"
@@ -94,16 +99,17 @@ class Spotify:
 
         for track in playlist_tracks:
             tracks.append(
-                {
-                    "name": track["name"],
-                    "artist": track["artists"][0]["name"],
-                    "thumbnail": track["album"]["images"][0]["url"],
-                }
+                SpotifyTrackInfo(
+                    "",
+                    track["name"],
+                    track["artists"][0]["name"],
+                    track["album"]["images"][0]["url"],
+                )
             )
 
         return tracks
 
-    async def get_album_tracks_info(self, id_or_url: str) -> List[Dict[str, str]]:
+    async def get_album_tracks_info(self, id_or_url: str) -> List[SpotifyTrackInfo]:
         self.log.info(f'Searching spotify for album "{id_or_url}"')
         try:
             album = self.service.album(id_or_url)
@@ -116,7 +122,7 @@ class Spotify:
         )
 
         album_tacks = album["tracks"]["items"]
-        tracks = []
+        tracks: List[SpotifyTrackInfo] = []
         album_thumbnail = album["images"][0]["url"]
 
         if len(album_tacks) > self.max_entries:
@@ -127,11 +133,9 @@ class Spotify:
 
         for track in album_tacks:
             tracks.append(
-                {
-                    "artist": track["artists"][0]["name"],
-                    "name": track["name"],
-                    "thumbnail": album_thumbnail,
-                }
+                SpotifyTrackInfo(
+                    "", track["artists"][0]["name"], track["name"], album_thumbnail
+                )
             )
 
         return tracks

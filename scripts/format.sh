@@ -2,4 +2,4 @@
 set -e
 
 poetry run black discordbot
-poetry run isort discordbot
+poetry run isort --profile black discordbot

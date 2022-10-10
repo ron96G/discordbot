@@ -21,6 +21,12 @@ class ConfigStore:
             val = os.environ.get(key)
         return val or fallback
 
+    def get_env_first(self, key: str, fallback: str = None):
+        val = os.environ.get(key)
+        if val is None:
+            val = self.config.get(key)
+        return val or fallback
+
     def getAll(self):
         return self.config
 

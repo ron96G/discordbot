@@ -2,43 +2,8 @@ import logging
 from random import randint
 
 import discord
+from common.context import Context
 from discord.ext import commands
-
-
-class Context(commands.Context):
-    async def tick(self, value):
-        emoji = "\N{WHITE HEAVY CHECK MARK}" if value else "\N{CROSS MARK}"
-        try:
-            await self.message.add_reaction(emoji)
-        except discord.HTTPException:
-            pass
-
-    async def reply_formatted_error(
-        self,
-        error_msg: str,
-        error_title: str = "Error occurred",
-        thumbnail_url: str = None,
-    ) -> discord.Message:
-        embed = discord.Embed(
-            title=error_title, description=error_msg, color=discord.Color.red()
-        )
-        embed.set_author(name=self.author.name, icon_url=self.author.avatar_url)
-        if thumbnail_url:
-            embed.set_thumbnail(url=thumbnail_url)
-
-        return await self.send(embed=embed)
-
-    async def reply_formatted_msg(
-        self, msg: str, title: str = "Bottich Audio Player", thumbnail_url: str = None
-    ) -> discord.Message:
-        embed = discord.Embed(
-            title=title, description=msg, color=discord.Color.dark_gold()
-        )
-        embed.set_author(name=self.author.name, icon_url=self.author.avatar_url)
-        if thumbnail_url:
-            embed.set_thumbnail(url=thumbnail_url)
-
-        return await self.send(embed=embed)
 
 
 class Func(commands.Cog):
@@ -78,12 +43,13 @@ class Func(commands.Cog):
     @commands.command()
     async def skip(self, ctx: Context):
         """Skip either the currently playing song or the next queued one if none is playing"""
-        if ctx.voice_client is not None and ctx.voice_client.is_playing():
-            # skip the song that the voice_client is currently playing
-            ctx.voice_client.stop()
-        else:
-            # skip the first song that is queued if no song is currently playing
-            await self.pop(ctx)
+        async with ctx.typing():
+            if ctx.voice_client is not None and ctx.voice_client.is_playing():
+                # skip the song that the voice_client is currently playing
+                ctx.voice_client.stop()
+            else:
+                # skip the first song that is queued if no song is currently playing
+                await self.pop(ctx)
 
     @commands.command()
     async def resume(self, ctx: commands.Context):
@@ -101,19 +67,7 @@ class Func(commands.Cog):
         await ctx.tick(number == value)
 
     @commands.command()
-    async def clear(self, ctx: Context):
-        """Clear the entire queue"""
-        await self.bot.queue.clear(ctx.message.guild.id)
-        await ctx.tick(True)
-
-    @commands.command()
     async def pop(self, ctx: Context):
         """Remove the next item from the queue"""
-        self.bot.queue.pop(ctx.message.guild.id)
+        self.bot.track_queue.pop(ctx.message.guild.id)
         await ctx.tick(True)
-
-    @commands.command()
-    async def size(self, ctx: commands.Context):
-        """Get the number of entries in the queue"""
-        n = self.bot.queue.size(ctx.message.guild.id)
-        await ctx.send(f"Currently there are {n} items queued.")

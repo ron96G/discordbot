@@ -1,175 +1,46 @@
 import logging
-from datetime import datetime
-from shutil import which
-from typing import Dict
+from typing import List
 
-import music_utils
-from cogs.func import Context
+from audio import (
+    LinksService,
+    QueueRunner,
+    SpotifyService,
+    SpotifyTrackInfo,
+    Track,
+    TrackInfo,
+    TrackQueue,
+    YoutubeService,
+    YoutubeTrackInfo,
+)
+from cogs import Context
+from common.context import Context
+from discord.embeds import Embed
 from discord.ext import commands
 
 
-def is_ffmpeg_installed():
-    return which("ffmpeg") is not None
+def extract_embedded_info(ctx: Context) -> TrackInfo:
+    embeds: List[Embed] = ctx.message.embeds
+    if bool(embeds):
+        return TrackInfo(embeds[0].url, embeds[0].title, embeds[0].thumbnail.url)
 
 
 class Music(commands.Cog):
-
     log = logging.getLogger("cog")
 
     def __init__(
         self,
         bot: commands.Bot,
-        youtube: music_utils.Youtube = None,
-        spotify: music_utils.Spotify = None,
-        twitch: music_utils.Twitch = None,
+        youtube: YoutubeService = None,
+        spotify: SpotifyService = None,
+        links: LinksService = None,
     ):
         self.bot = bot
         self.youtube = youtube
         self.spotify = spotify
-        self.twitch = twitch
-        self.log.info(
-            f"Starting Music-Cog {'with' if youtube else 'without'} youtube plugin"
-        )
-        self.log.info(
-            f"Starting Music-Cog {'with' if spotify else 'without'} spotify plugin"
-        )
-        self.log.info(
-            f"Starting Music-Cog {'with' if twitch else 'without'} twitch plugin"
-        )
+        self.links = links
 
-    async def enqueue_youtube_track(
-        self, ctx: Context, data: Dict[str, str], stream: bool = True
-    ):
-        url = data["url"]
-        try:
-            self.log.info(f'Trying to {"stream" if stream else "download"} {url}')
-            player = music_utils.YTDLSource.from_url(
-                url, loop=self.bot.loop, stream=stream
-            )
-
-        except Exception as e:
-            self.log.warn(f'Failed to retrieve song "{url}": {e}')
-            raise commands.CommandError("failed to retrieve song")
-
-        await self.enqueue_track(ctx, player, data, stream)
-
-    async def enqueue_track(
-        self, ctx: Context, player, data: Dict[str, str], stream: bool = True
-    ) -> int:
-
-        id = ctx.message.guild.id
-        if not self.bot.queue.exists(id):
-            await self.bot.queue.register(id)
-        pos = await self.bot.queue.put(
-            id,
-            {
-                "ctx": ctx,
-                "player": player,
-                "time": datetime.now(),
-                "thumbnail": data["thumbnail"] if "thumbnail" in data else None,
-            },
-        )
-        return pos
-
-    async def play_tracks(self, ctx: Context, query_or_url: str, stream: bool = True):
-
-        if not is_ffmpeg_installed():
-            return await ctx.reply_formatted_error(
-                f"Internal Server Error: Missing required ffmpeg lib"
-            )
-
-        if ctx.voice_client is None:
-            await self.bot.join_author(ctx)
-
-        data = []
-        async with ctx.typing():
-            self.log.info(f"Checking if {query_or_url} is a youtube url")
-
-            # convert query or spotify url to youtube url for streaming
-            if self.spotify is not None and self.spotify.is_spotify_url(query_or_url):
-                self.log.info(f"{query_or_url} is a spotify url")
-                try:
-                    if stream and (
-                        self.spotify.is_spotify_album(query_or_url)
-                        or self.spotify.is_spotify_playlist(query_or_url)
-                    ):
-                        self.log.info(
-                            'Albums and playlists are only supported in "play" mode'
-                        )
-                        return await ctx.reply_formatted_error(
-                            f'Albums and playlists are only supported in "play" mode'
-                        )
-
-                    tracks = await self.spotify.get_info(query_or_url)
-                    self.log.info(f"Found {len(tracks)} tracks")
-
-                    for track in tracks:
-                        _data = await self.youtube.find_video_by_query(
-                            f'{track["artist"]} {track["name"]}'
-                        )
-                        _data["thumbnail"] = track["thumbnail"]
-
-                        data.append(_data)
-
-                except music_utils.SpotifyError as e:
-                    self.log.warn(f"Failed to get spotify info: {e}")
-                    return await ctx.reply_formatted_error(
-                        f'Failed to play "{query_or_url}": {e}'
-                    )
-
-                except music_utils.YouTubeError as e:
-                    self.log.warn(f"Failed to get youtube info: {e}")
-                    return await ctx.reply_formatted_error(
-                        f'Failed to play "{query_or_url}": {e}'
-                    )
-
-            # convert query to a youtube url for streaming
-            elif self.youtube is not None and not self.youtube.is_yt_url(query_or_url):
-                self.log.info(f"{query_or_url} is a query")
-                try:
-                    data.append(await self.youtube.find_video_by_query(query_or_url))
-
-                except music_utils.YouTubeError as e:
-                    self.log.warn(f"Failed to get youtube info: {e}")
-                    return await ctx.reply_formatted_error(
-                        f'Failed to play "{query_or_url}": {e}'
-                    )
-
-            # is already a valid youtube url
-            elif self.youtube is not None and self.youtube.is_yt_url(query_or_url):
-                self.log.info(f"{query_or_url} is a youtube url")
-                try:
-                    data.append(await self.youtube.find_video_by_url(query_or_url))
-
-                except music_utils.YouTubeError as e:
-                    self.log.warn(e)
-                    return await ctx.reply_formatted_error(
-                        f'Failed to play "{query_or_url}": {e}'
-                    )
-
-            else:
-                self.log.warn(f"{query_or_url} is not known")
-                raise commands.CommandError("Unknown query or url")
-
-            # append all videos to queue
-            if len(data) > 0:
-                for _data in data:
-                    pos = await self.enqueue_youtube_track(ctx, _data, stream)
-
-            await ctx.tick(True)
-
-            if len(data) > 1:
-                return await ctx.reply_formatted_msg(f"Queued {len(data)} songs")
-
-    @commands.command()
-    async def play(self, ctx: Context, *, query_or_url: str):
-        """Play the provided query/url/song or add it to queue if one is already playing"""
-        await self.play_tracks(ctx, query_or_url, False)
-
-    @commands.command()
-    async def stream(self, ctx: Context, *, query_or_url: str):
-        """Play the provided query/url/song or add it to queue if one is already playing"""
-        await self.play_tracks(ctx, query_or_url, True)
+        self.queue = TrackQueue(50, self.bot.loop)
+        self.runner = QueueRunner(self.bot, self.queue, self.bot.loop)
 
     @commands.command()
     async def volume(self, ctx, volume: int):
@@ -179,3 +50,104 @@ class Music(commands.Cog):
 
         ctx.voice_client.source.volume = volume / 100
         await ctx.send(f"Changed volume to {volume}%")
+
+    @commands.command()
+    async def play(self, ctx: Context, *, query_or_url: str):
+        """V2 Debugging Command"""
+
+        await ctx.reply_formatted_error("play is not implemented.", "Not Implemented")
+
+    @commands.command()
+    async def stream(self, ctx: Context, *, query_or_url: str):
+        """V2 Debugging Command"""
+
+        if ctx.voice_client is None:
+            await self.bot.join_author(ctx)
+
+        async with ctx.typing():
+            info = extract_embedded_info(ctx)
+
+            try:
+                if self.spotify.is_spotify_url(query_or_url):
+                    self.log.info("input is a spotify url")
+                    spotify_info_list = await self.spotify.get_info(query_or_url)
+
+                    track = Track(ctx, spotify_info_list)
+
+                    async def fetch_download_url(track_info: SpotifyTrackInfo):
+                        self.log.info(f"Running before_build: {track_info}")
+                        youtube_info_list = await self.youtube.get_video_info_by_query(
+                            f"{track_info.artist} - {track_info.name}"
+                        )
+                        youtube_download_info = (
+                            await self.youtube.get_download_url(
+                                youtube_info_list[0], True
+                            )
+                        )[0]
+
+                        track_info.title = youtube_info.title
+                        track_info.download_url = youtube_download_info.download_url
+                        track_info.thumbnail = youtube_info.thumbnail
+
+                    track.set_before_build(fetch_download_url)
+
+                elif self.youtube.is_yt_url(query_or_url):
+                    self.log.info("input is a youtube url")
+
+                    if self.youtube.is_yt_playlist_url(query_or_url) or info is None:
+                        self.log.info(
+                            "embedded info is insufficient. Fetching info from Youtube."
+                        )
+                        info = await self.youtube.get_info(query_or_url)
+                    else:
+                        info.url = query_or_url
+
+                    track = Track(ctx, info)
+
+                    async def fetch_download_url(track_info: YoutubeTrackInfo):
+                        self.log.info(f"Running before_build: {track_info}")
+                        youtube_info = (
+                            await self.youtube.get_download_url(track_info, True)
+                        )[0]
+                        track_info.title = youtube_info.title
+                        track_info.download_url = youtube_info.download_url
+                        track_info.thumbnail = youtube_info.thumbnail
+
+                    track.set_before_build(fetch_download_url)
+
+                elif self.links.is_url(query_or_url):
+                    self.log.info("input is a url")
+                    stream_url = self.links.find_stream(query_or_url)
+                    info.download_url = stream_url
+                    track = Track(ctx, info)
+
+                else:
+                    self.log.info("input is a query")
+                    youtube_info = (
+                        await self.youtube.get_video_info_by_query(query_or_url)
+                    )[0]
+                    youtube_download_info = await self.youtube.get_download_url(
+                        youtube_info
+                    )
+                    track = Track(ctx, youtube_download_info)
+
+            except Exception as e:
+                self.log.error(e)
+                return await ctx.reply_formatted_error(e, "Error")
+
+            id = ctx.guild.id
+
+            if not self.queue.has(id):
+                self.runner.register(id)
+
+            tracks_count = len(track)
+            self.log.info(f"Trying to enqueue {tracks_count} track(s) for {id}")
+            await self.queue.put(id, track)
+            self.log.info(f"Successfully enqueued {tracks_count} track(s) for {id}")
+
+            if tracks_count > 1:
+                await ctx.reply_formatted_msg(
+                    f"Successfully enqueued {tracks_count} tracks."
+                )
+            else:
+                await ctx.tick("OK")

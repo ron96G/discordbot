@@ -6,30 +6,94 @@ import os
 import traceback
 from typing import List
 
+import boto3
 import discord
-from cogs.func import Context
+import spotipy
+from audio import LinksService, SpotifyService, YoutubeService
+from cogs import Config, Func, Music, TextToSpeech, Wikipedia
+from common.config import ConfigMap
+from common.config_store import ConfigStore
+from common.context import Context
 from discord.errors import HTTPException, NotFound
 from discord.ext import commands
 from discord.message import Attachment, Message
-from utils.config import ConfigMap
-from utils.queue import BotQueue
+from googleapiclient.discovery import build
+from spotipy.oauth2 import SpotifyClientCredentials
 
 LEAVE_AFTER_INACTIVITY_DELAY = 120
 LEAVE_AFTER_INACTIVITY_DURATION = 600
 
 
 class Bot(commands.Bot):
+    configstore: ConfigStore
+
     def __init__(
-        self, command_prefix, description, configmap: ConfigMap = None, dir="./uploads/"
+        self,
+        command_prefix,
+        description,
+        configstore: ConfigStore,
+        configmap: ConfigMap = None,
+        dir="./uploads/",
     ):
-        super().__init__(command_prefix=command_prefix, description=description)
+        intents = discord.Intents.default()
+        intents.message_content = True
+
+        super().__init__(
+            command_prefix=command_prefix, description=description, intents=intents
+        )
         self.log = logging.getLogger("bot")
         self.dir = dir
-        self.queue = BotQueue(self)
         self.config = configmap or ConfigMap(self, [])
+        self.configstore = configstore
 
         if not os.path.exists(self.dir):
             os.makedirs(self.dir)
+
+    async def setup_hook(self):
+        await self.add_cog(Config(self))
+        await self.add_cog(Func(self))
+
+        t2s = TextToSpeech(
+            self,
+            boto3.client(
+                "polly",
+                aws_access_key_id=self.configstore.get("ACCESS_KEY"),
+                aws_secret_access_key=self.configstore.get("SECRET_KEY"),
+                region_name="eu-central-1",
+            ),
+        )
+        await self.add_cog(t2s)
+        await self.add_cog(Wikipedia(self, t2s))
+
+        spotify = None
+        SPOTIFY_CLIENT_ID = self.configstore.get("SPOTIFY_CLIENT_ID")
+        SPOTIFY_CLIENT_SECRET = self.configstore.get("SPOTIFY_CLIENT_SECRET")
+
+        if SPOTIFY_CLIENT_ID is not None and SPOTIFY_CLIENT_SECRET is not None:
+            s = spotipy.Spotify(
+                client_credentials_manager=SpotifyClientCredentials(
+                    client_id=SPOTIFY_CLIENT_ID, client_secret=SPOTIFY_CLIENT_SECRET
+                )
+            )
+            spotify = SpotifyService(s)
+
+        youtube = None
+        YOUTUBE_API_KEY = self.configstore.get("YOUTUBE_API_KEY")
+        if YOUTUBE_API_KEY is not None:
+            service = build("youtube", "v3", developerKey=YOUTUBE_API_KEY)
+            youtube = YoutubeService(service)
+
+        links = LinksService()
+
+        music = Music(self, youtube, spotify, links)
+        await self.add_cog(music)
+        self.track_queue = music.queue
+        self.queue_runner = music.runner
+
+        debug_enabled = self.configstore.get_env_first("DEBUG") in ["true", "True"]
+        debug_enabled = True
+        if debug_enabled:
+            self.log.warn("Currently no debugging cog available")
 
     async def on_ready(self):
         self.log.info(f"Logged in as {self.user.name} with id {self.user.id}")
@@ -100,7 +164,7 @@ class Bot(commands.Bot):
             for voice_client in self.voice_clients:
                 voice_client: discord.VoiceClient = voice_client
 
-                if not voice_client.is_playing():
+                if not voice_client.is_playing() and not voice_client.is_paused():
                     id = voice_client.guild.id
                     if id not in marked_for_inactivity:
                         self.log.info(f"Flagged voice_client of {id} for inactivity")
@@ -124,7 +188,7 @@ class Bot(commands.Bot):
                         "voice_client"
                     ]
                     await asyncio.gather(
-                        voice_client.disconnect(), self.queue.deregister(id)
+                        voice_client.disconnect(), self.track_queue.remove(id)
                     )
                     left.append(id)
 

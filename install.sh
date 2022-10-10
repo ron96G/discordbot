@@ -3,9 +3,10 @@ set -ex
 
 cd /opt
 
-yum install -y git python3 opus
+amazon-linux-extras enable python3.8
+yum install -y git python3.8 opus
 if [ ! -x "$(command -v poetry)" ]; then
-    curl -sSL https://install.python-poetry.org | python3 -
+    curl -sSL https://install.python-poetry.org | python3.8 -
 fi
 
 export PATH="/root/.local/bin:$PATH"
