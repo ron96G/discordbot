@@ -59,7 +59,7 @@ class TrackQueue:
         try:
             for track in tracks:
                 track.priority = prio
-                queue.put_nowait(track)
+                queue.put_nowait(track.as_prio_item())
 
         except QueueFull as e:
             raise ValueError("Queue is full. Skipping...")

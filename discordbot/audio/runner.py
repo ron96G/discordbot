@@ -99,7 +99,7 @@ class QueueRunner:
                 self.log.info(f"{guild_id}: Getting new track from queue")
                 track: Track = (
                     await queue.get()
-                )  # this blocks until a track is available
+                ).item  # this blocks until a track is available
                 self.log.info(f"Got new track from queue: {track.pretty_print()}")
 
                 if not voice_client.is_connected():

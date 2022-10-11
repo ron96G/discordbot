@@ -27,12 +27,11 @@ class TrackInfo:
         return f'TrackInfo: "{self.title}"'
 
 
-@dataclass(order=True)
 class Track:
     priority: int
-    context: Context = field(compare=False)
-    info: List[TrackInfo] = field(compare=False)
-    _player: PCMVolumeTransformer = field(compare=False)
+    context: Context
+    info: List[TrackInfo]
+    _player: PCMVolumeTransformer
     current = 0
     length = 0
     volume: float
@@ -70,6 +69,9 @@ class Track:
             self.volume,
         )
 
+    def as_prio_item(self):
+        return PrioritizedItem(self.priority, self)
+
     def is_failed(self):
         return self.error is not None
 
@@ -90,9 +92,6 @@ class Track:
         if self.current == 0:
             raise ValueError("There is no active track. Select the next first.")
         return self.info[self.current - 1]
-
-    def isMultipleTracks(self):
-        return self.length > 1
 
     def hasNext(self):
         return self.current < self.length
@@ -121,3 +120,9 @@ class Track:
 
         self.current += 1
         return self._player
+
+
+@dataclass(order=True)
+class PrioritizedItem:
+    priority: int
+    item: Track = field(compare=False)
