@@ -204,7 +204,7 @@ class Bot(commands.Bot):
                     ]
 
                     await voice_client.disconnect()
-                    self.track_queue.remove(id)
+                    self.queue.remove(id)
                     left.append(id)
 
             for id in left:
