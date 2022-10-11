@@ -4,8 +4,13 @@ from typing import Callable, List, Optional
 from common.context import Context
 from discord import FFmpegPCMAudio, PCMVolumeTransformer
 
-FFMPEG_OPTS = {
+STREAM_FFMPEG_OPTS = {
     "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+    "options": "-vn",
+}
+
+FFMPEG_OPTS = {
+    "before_options": "",
     "options": "-vn",
 }
 
@@ -16,6 +21,7 @@ class TrackInfo:
     title: str
     thumbnail: Optional[str] = ""
     download_url: Optional[str] = ""
+    stream = True
 
     def pretty_print(self):
         return f'TrackInfo: "{self.title}"'
@@ -56,9 +62,12 @@ class Track:
     def __del__(self):
         print(f"Deleting track {self.info}")
 
-    def _build_player(self, download_url: str):
+    def _build_player(self, download_url: str, stream=True):
         return PCMVolumeTransformer(
-            FFmpegPCMAudio(download_url, **FFMPEG_OPTS), self.volume
+            FFmpegPCMAudio(
+                download_url, **STREAM_FFMPEG_OPTS if stream else FFMPEG_OPTS
+            ),
+            self.volume,
         )
 
     def is_failed(self):
@@ -101,7 +110,7 @@ class Track:
                 self.error = e
                 return
 
-        self._player = self._build_player(track_info.download_url)
+        self._player = self._build_player(track_info.download_url, track_info.stream)
 
         if self.after_build is not None:
             try:

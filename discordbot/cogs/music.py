@@ -3,12 +3,10 @@ from typing import List
 
 from audio import (
     LinksService,
-    QueueRunner,
     SpotifyService,
     SpotifyTrackInfo,
     Track,
     TrackInfo,
-    TrackQueue,
     YoutubeService,
     YoutubeTrackInfo,
 )
@@ -38,9 +36,6 @@ class Music(commands.Cog):
         self.youtube = youtube
         self.spotify = spotify
         self.links = links
-
-        self.queue = TrackQueue(50, self.bot.loop)
-        self.runner = QueueRunner(self.bot, self.queue, self.bot.loop)
 
     @commands.command()
     async def volume(self, ctx, volume: int):
@@ -137,12 +132,12 @@ class Music(commands.Cog):
 
             id = ctx.guild.id
 
-            if not self.queue.has(id):
-                self.runner.register(id)
+            if not self.bot.queue.has(id):
+                self.bot.runner.register(id)
 
             tracks_count = len(track)
             self.log.info(f"Trying to enqueue {tracks_count} track(s) for {id}")
-            await self.queue.put(id, track)
+            await self.bot.queue.put(id, track)
             self.log.info(f"Successfully enqueued {tracks_count} track(s) for {id}")
 
             if tracks_count > 1:

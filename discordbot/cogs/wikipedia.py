@@ -1,7 +1,15 @@
 import logging
 
+import wikipedia
 from cogs.text_to_speech import TextToSpeech
+from common.context import Context
 from discord.ext import commands
+
+
+class WikipediaError(Exception):
+    def __init__(self, msg, thrown=None):
+        super().__init__(msg)
+        self.thrown = thrown
 
 
 class Wikipedia(commands.Cog):
@@ -19,9 +27,8 @@ class Wikipedia(commands.Cog):
         self.t2s = t2s
 
     @commands.Command
-    async def explain(self, ctx: commands.Context, *, query: str):
+    async def explain(self, ctx: Context, *, query: str):
         """Let the bot explain a topic to you"""
-        import wikipedia
 
         id = ctx.message.guild.id
         lang = self.bot.config.get_config_for(id, "wikiLanguage", self.langugage)
@@ -41,13 +48,17 @@ class Wikipedia(commands.Cog):
             await ctx.send(f"{page[:until_last_sentence]}...")
 
             if self.t2s is not None:
-                await self.t2s.say(ctx=ctx, message=page[:until_last_sentence])
+                await self.t2s.say(ctx, message=page[:until_last_sentence])
+            else:
+                raise WikipediaError("text_to_speech plugin is not configured")
 
         except wikipedia.DisambiguationError as e:
             return await ctx.send(f"{query} may refer to {e.options}")
 
+        except WikipediaError as e:
+            return await ctx.reply_formatted_error(e)
         except Exception as e:
             self.log.error(f"failed command wikipedia.explain with: {e}")
-            return await ctx.send(
+            return await ctx.reply_formatted_error(
                 f'Currently unable to explain "{query}". Please try again later or try a different topic.'
             )

@@ -9,7 +9,14 @@ from typing import List
 import boto3
 import discord
 import spotipy
-from audio import LinksService, SpotifyService, YoutubeService
+from audio import (
+    LinksService,
+    QueueRunner,
+    SpotifyService,
+    TextToSpeechService,
+    TrackQueue,
+    YoutubeService,
+)
 from cogs import Config, Func, Music, TextToSpeech, Wikipedia
 from common.config import ConfigMap
 from common.config_store import ConfigStore
@@ -26,6 +33,10 @@ LEAVE_AFTER_INACTIVITY_DURATION = 600
 
 class Bot(commands.Bot):
     configstore: ConfigStore
+    config: ConfigMap
+    queue: TrackQueue
+    runner: QueueRunner
+    log = logging.getLogger("bot")
 
     def __init__(
         self,
@@ -41,7 +52,7 @@ class Bot(commands.Bot):
         super().__init__(
             command_prefix=command_prefix, description=description, intents=intents
         )
-        self.log = logging.getLogger("bot")
+
         self.dir = dir
         self.config = configmap or ConfigMap(self, [])
         self.configstore = configstore
@@ -50,16 +61,22 @@ class Bot(commands.Bot):
             os.makedirs(self.dir)
 
     async def setup_hook(self):
+
+        self.queue = TrackQueue(50, self.loop)
+        self.runner = QueueRunner(self, self.queue, self.loop)
+
         await self.add_cog(Config(self))
         await self.add_cog(Func(self))
 
         t2s = TextToSpeech(
             self,
-            boto3.client(
-                "polly",
-                aws_access_key_id=self.configstore.get("ACCESS_KEY"),
-                aws_secret_access_key=self.configstore.get("SECRET_KEY"),
-                region_name="eu-central-1",
+            TextToSpeechService(
+                boto3.client(
+                    "polly",
+                    aws_access_key_id=self.configstore.get("ACCESS_KEY"),
+                    aws_secret_access_key=self.configstore.get("SECRET_KEY"),
+                    region_name="eu-central-1",
+                )
             ),
         )
         await self.add_cog(t2s)
@@ -87,8 +104,6 @@ class Bot(commands.Bot):
 
         music = Music(self, youtube, spotify, links)
         await self.add_cog(music)
-        self.track_queue = music.queue
-        self.queue_runner = music.runner
 
         debug_enabled = self.configstore.get_env_first("DEBUG") in ["true", "True"]
         debug_enabled = True
