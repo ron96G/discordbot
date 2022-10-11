@@ -90,7 +90,8 @@ class QueueRunner:
         while not self.bot.is_closed():
             voice_client = self.find_relevant_voice_client(guild_id)
             if (
-                voice_client.is_connected()
+                voice_client is not None
+                and voice_client.is_connected()
                 and not voice_client.is_playing()
                 and not voice_client.is_paused()
             ):
