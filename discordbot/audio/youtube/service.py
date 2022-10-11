@@ -81,7 +81,7 @@ class YoutubeService:
         req = self.service.videos().list(
             id=id,
             part="id,snippet",
-            fields="items(id(videoId),snippet(title,thumbnails(medium)))",
+            fields="items(id,snippet(title,thumbnails(medium)))",
             maxResults=1,
         )
         return await self._fetch_video_info(req)
@@ -90,7 +90,7 @@ class YoutubeService:
         self.log.info(f'Getting video info for query "{query}"')
         req = self.service.search().list(
             part="id,snippet",
-            fields="items(id(videoId),snippet(title,thumbnails(medium)))",
+            fields="items(id,snippet(title,thumbnails(medium)))",
             type="video",
             q=query,
             maxResults=1,
