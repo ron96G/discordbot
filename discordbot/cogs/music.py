@@ -113,6 +113,13 @@ class Music(commands.Cog):
                 elif self.links.is_url(query_or_url):
                     self.log.info("input is a url")
                     stream_url = self.links.find_stream(query_or_url)
+                    if info is None:
+                        info = TrackInfo(
+                            query_or_url,
+                            "Twitch Stream",
+                            "https://pbs.twimg.com/profile_images/1450901581876973568/0bHBmqXe_400x400.png",
+                            "",
+                        )
                     info.download_url = stream_url
                     track = Track(ctx, info)
 
