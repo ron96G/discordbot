@@ -77,6 +77,7 @@ class YoutubeService:
         return await self._fetch_video_info(req)
 
     async def get_video_info(self, id: str) -> List[YoutubeTrackInfo]:
+        self.log.info(f'Getting video info for id "{id}"')
         req = self.service.videos().list(
             id=id,
             part="id,snippet",
@@ -86,6 +87,7 @@ class YoutubeService:
         return await self._fetch_video_info(req)
 
     async def get_video_info_by_query(self, query: str) -> List[YoutubeTrackInfo]:
+        self.log.info(f'Getting video info for query "{query}"')
         req = self.service.search().list(
             part="id,snippet",
             fields="items(id(videoId),snippet(title,thumbnails(medium)))",
