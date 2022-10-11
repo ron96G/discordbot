@@ -89,7 +89,11 @@ class QueueRunner:
 
         while not self.bot.is_closed():
             voice_client = self.find_relevant_voice_client(guild_id)
-            if voice_client.is_connected() and not voice_client.is_playing():
+            if (
+                voice_client.is_connected()
+                and not voice_client.is_playing()
+                and not voice_client.is_paused()
+            ):
 
                 self.log.info(f"{guild_id}: Getting new track from queue")
                 track: Track = (
@@ -126,7 +130,7 @@ class QueueRunner:
                             self.log.info(f"Playing track: {info.pretty_print()}")
 
                             await ctx.reply_formatted_msg(
-                                f"Now playing {info.title}",
+                                f'Now playing "{info.title}"',
                                 title=title,
                                 thumbnail_url=info.thumbnail,
                             )

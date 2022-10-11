@@ -187,9 +187,9 @@ class Bot(commands.Bot):
                     voice_client: discord.VoiceClient = marked_for_inactivity[id][
                         "voice_client"
                     ]
-                    await asyncio.gather(
-                        voice_client.disconnect(), self.track_queue.remove(id)
-                    )
+
+                    await voice_client.disconnect()
+                    self.track_queue.remove(id)
                     left.append(id)
 
             for id in left:
