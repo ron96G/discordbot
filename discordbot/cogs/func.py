@@ -69,5 +69,5 @@ class Func(commands.Cog):
     @commands.command()
     async def pop(self, ctx: Context):
         """Remove the next track from the queue"""
-        self.bot.track_queue.pop(ctx.message.guild.id)
+        self.bot.queue.pop(ctx.message.guild.id)
         await ctx.tick(True)
