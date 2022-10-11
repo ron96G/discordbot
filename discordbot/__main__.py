@@ -3,9 +3,19 @@
 import logging
 import os
 
+import coloredlogs
 from bot import Bot
 from common import ConfigMap, ConfigStore, install
 from discord.ext import commands
+
+logging.basicConfig(
+    level=os.environ.get("LOGLEVEL", "INFO"),
+    format="[%(asctime)s] [%(pathname)s:%(lineno)d] %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%dT%H:%M:%S",
+)
+coloredlogs.install(
+    fmt="[%(asctime)s] [%(pathname)s:%(lineno)d] %(levelname)s - %(message)s"
+)
 
 CONFIG_VERSION = os.environ.get("CONFIG_VERSION", None)
 CONFIG_TYPE = os.environ.get("CONFIG_TYPE", "s3")
@@ -22,12 +32,6 @@ TOKEN = config.get("DISCORD_SECRET_TOKEN")
 FFMPEG_VERSION = config.get("FFMPEG_VERSION", fallback="5.1.1")
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        filename=config.get_env_first("FILENAME", None),
-        level=config.get_env_first("LOGLEVEL", "INFO"),
-        format="[%(asctime)s] [%(pathname)s:%(lineno)d] %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%dT%H:%M:%S",
-    )
 
     install(FFMPEG_VERSION, force=False)
 

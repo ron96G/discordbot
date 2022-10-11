@@ -6,11 +6,12 @@
 | :--------------- | :------ |
 | !Help command | ✅ |
 | Play music from Youtube | ✅ |
-| Play music from Youtube playlist | ❌ |
+| Play music from Youtube playlist | ✅ |
 | Play music from Spotify | ✅ |
 | Play music from Spotify album | ✅ |
 | Play music from Spotify playlist | ✅ |
 | Play music by query | ✅ |
+| Play audio from any URL supported by [streamlink](https://streamlink.github.io/) | ✅ |
 | Play music from local filesystem | ❌ |
 | Queueing of audio sources | ✅ |
 | General handling (skipping, ...) of audio sources | ✅ |

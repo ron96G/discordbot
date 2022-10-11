@@ -95,7 +95,7 @@ class QueueRunner:
                 track: Track = (
                     await queue.get()
                 )  # this blocks until a track is available
-                self.log.info(f"Got new track from queue: {track.info}")
+                self.log.info(f"Got new track from queue: {track.pretty_print()}")
 
                 if not voice_client.is_connected():
                     voice_client = self.find_relevant_voice_client(guild_id)
@@ -105,10 +105,6 @@ class QueueRunner:
 
                     async with ctx.typing():
                         try:
-                            self.log.debug(
-                                f"{guild_id}: Waiting for player to be ready"
-                            )
-
                             player = await track.next()
                             if track.is_failed():
                                 await ctx.reply_formatted_error(
@@ -127,6 +123,7 @@ class QueueRunner:
                                 title = f"Bottich Audio Player ({track.current}/{track.max_len()})"
 
                             info = track.get_current_info()
+                            self.log.info(f"Playing track: {info.pretty_print()}")
 
                             await ctx.reply_formatted_msg(
                                 f"Now playing {info.title}",

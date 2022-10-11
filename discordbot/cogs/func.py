@@ -48,7 +48,7 @@ class Func(commands.Cog):
                 # skip the song that the voice_client is currently playing
                 ctx.voice_client.stop()
             else:
-                # skip the first song that is queued if no song is currently playing
+                # skip the first track that is queued if no song is currently playing
                 await self.pop(ctx)
 
     @commands.command()
@@ -68,6 +68,6 @@ class Func(commands.Cog):
 
     @commands.command()
     async def pop(self, ctx: Context):
-        """Remove the next item from the queue"""
+        """Remove the next track from the queue"""
         self.bot.track_queue.pop(ctx.message.guild.id)
         await ctx.tick(True)

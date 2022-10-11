@@ -113,6 +113,7 @@ class YoutubeService:
     async def _extract_info(
         self, info: YoutubeTrackInfo, stream=True, max_entries=1
     ) -> List[YoutubeTrackInfo]:
+        self.log.warn("Sending request via YTDL")
         data = ytdl.extract_info(info.url, download=not stream)
         info_list: List[YoutubeTrackInfo] = []
 
@@ -136,10 +137,9 @@ class YoutubeService:
         return info_list
 
     async def _fetch_video_info(self, req) -> List[YoutubeTrackInfo]:
-        self.log.debug("Executing youtube request ")
-
         info_list = []
         try:
+            self.log.warn("Sending request to Youtube API")
             res = req.execute()
             self.log.debug(res)
 
@@ -149,6 +149,9 @@ class YoutubeService:
                     id = item["snippet"]["resourceId"]["videoId"]
                 else:
                     id = item["id"]
+
+                if isinstance(id, dict):
+                    id = id["videoId"]
 
                 info = YoutubeTrackInfo(
                     YOUTUBE_VIDEO_BASE_URL + id,

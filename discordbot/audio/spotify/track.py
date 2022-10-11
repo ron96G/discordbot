@@ -14,6 +14,9 @@ class SpotifyTrackInfo(TrackInfo):
         self.artist = artist
         self.name = name
 
+    def pretty_print(self):
+        return f'TrackInfo: "{self.artist} - {self.name}" ({self.url})'
+
 
 class SpotifyTrack(Track):
     def __init__(self, ctx: Context, info: List[TrackInfo], volume=0.5):

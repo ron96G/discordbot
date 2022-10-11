@@ -53,13 +53,13 @@ class Music(commands.Cog):
 
     @commands.command()
     async def play(self, ctx: Context, *, query_or_url: str):
-        """V2 Debugging Command"""
+        """Not implemented"""
 
         await ctx.reply_formatted_error("play is not implemented.", "Not Implemented")
 
     @commands.command()
     async def stream(self, ctx: Context, *, query_or_url: str):
-        """V2 Debugging Command"""
+        """Stream videos, songs, albums and playlists from various sources like YouTube, Spotify, Twitch, ..."""
 
         if ctx.voice_client is None:
             await self.bot.join_author(ctx)
@@ -75,14 +75,14 @@ class Music(commands.Cog):
                     track = Track(ctx, spotify_info_list)
 
                     async def fetch_download_url(track_info: SpotifyTrackInfo):
-                        self.log.info(f"Running before_build: {track_info}")
-                        youtube_info_list = await self.youtube.get_video_info_by_query(
-                            f"{track_info.artist} - {track_info.name}"
-                        )
-                        youtube_download_info = (
-                            await self.youtube.get_download_url(
-                                youtube_info_list[0], True
+                        self.log.debug(f"Running before_build: {track_info}")
+                        youtube_info = (
+                            await self.youtube.get_video_info_by_query(
+                                f"{track_info.artist} - {track_info.name}"
                             )
+                        )[0]
+                        youtube_download_info = (
+                            await self.youtube.get_download_url(youtube_info, True)
                         )[0]
 
                         track_info.title = youtube_info.title
@@ -105,7 +105,7 @@ class Music(commands.Cog):
                     track = Track(ctx, info)
 
                     async def fetch_download_url(track_info: YoutubeTrackInfo):
-                        self.log.info(f"Running before_build: {track_info}")
+                        self.log.debug(f"Running before_build: {track_info}")
                         youtube_info = (
                             await self.youtube.get_download_url(track_info, True)
                         )[0]

@@ -14,6 +14,7 @@ spotipy = "^2.20.0"
 wikipedia = "^1.4.0"
 streamlink = "^5.0.1"
 twitchAPI = "^2.5.7"
+coloredlogs = "^15.0.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

@@ -61,6 +61,7 @@ class SpotifyService:
     async def get_track_info(self, id_or_url: str) -> SpotifyTrackInfo:
         self.log.info(f'Searching spotify for track "{id_or_url}"')
         try:
+            self.log.warn("Sending track request to Spotify API")
             track = self.service.track(id_or_url, market=SPOTIFY_MARKET)
 
         except Exception as e:
@@ -79,6 +80,7 @@ class SpotifyService:
         self.log.info(f'Searching spotify for playlist "{id_or_url}"')
 
         try:
+            self.log.warn("Sending playlist request to Spotify API")
             playlist = self.service.playlist(
                 id_or_url,
                 market=SPOTIFY_MARKET,
@@ -112,6 +114,7 @@ class SpotifyService:
     async def get_album_tracks_info(self, id_or_url: str) -> List[SpotifyTrackInfo]:
         self.log.info(f'Searching spotify for album "{id_or_url}"')
         try:
+            self.log.warn("Sending album request to Spotify API")
             album = self.service.album(id_or_url)
 
         except Exception as e:
