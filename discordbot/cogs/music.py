@@ -116,8 +116,8 @@ class Music(commands.Cog):
                     if info is None:
                         info = TrackInfo(
                             query_or_url,
-                            "Twitch Stream",
-                            "https://pbs.twimg.com/profile_images/1450901581876973568/0bHBmqXe_400x400.png",
+                            "Stream",
+                            None,
                             "",
                         )
                     info.download_url = stream_url
