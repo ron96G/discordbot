@@ -11,6 +11,14 @@ class LinksError(Exception):
         self.thrown = thrown
 
 
+def first_desired_in_list(given: List[str], desired: List[str]):
+    if given is None or desired is None:
+        return None
+    for item in desired:
+        if item in given:
+            return item
+
+
 class LinksService:
 
     log = logging.getLogger()
@@ -21,24 +29,26 @@ class LinksService:
     def is_url(self, url: str) -> bool:
         return "https://" in url
 
-    def _get_quality(self, given: List[str], desired: List[str]):
-        for item in desired:
-            if item in given:
-                return item
-
-    def find_stream(self, url: str, quality="480p") -> str:
+    def find_stream(
+        self, url: str, qualities: List[str] = ["best", "good", "720p", "480p"]
+    ) -> str:
         try:
             streams: Dict[str, Stream] = streamlink.streams(url)
+            if streams is not None:
+                available_qualities = streams.keys()
 
-            quality = self._get_quality(
-                streams.keys(), ["best", "good", "480p", "720p"]
-            )
+            if available_qualities is None or len(available_qualities) == 0:
+                raise LinksError(f"No stream found for {url}")
+
+            quality = first_desired_in_list(available_qualities, qualities)
 
             if quality is None:
-                self.log.warn(f"Missing quality {quality} in {streams.keys()}")
-                raise LinksError(f"Defined quality {quality} is not in result set")
+                self.log.warn(
+                    f"Missing any value of {qualities} in {available_qualities}"
+                )
+                quality = available_qualities[0]  # select any quality
 
             return streams[quality].url
 
         except streamlink.NoPluginError:
-            raise ValueError(f"No stream available for {url}")
+            raise LinksError("Provided URL is not supported")

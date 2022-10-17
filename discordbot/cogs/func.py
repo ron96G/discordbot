@@ -33,6 +33,7 @@ class Func(commands.Cog):
         """Command the bot to disconnect from the voice channel"""
         if ctx.voice_client is not None:
             await ctx.voice_client.disconnect()
+        self.bot.queue.remove(ctx.message.guild.id)
 
     @commands.command()
     async def pause(self, ctx: commands.Context):
@@ -68,6 +69,6 @@ class Func(commands.Cog):
 
     @commands.command()
     async def pop(self, ctx: Context):
-        """Remove the next track from the queue"""
+        """Remove the next track. If the next track is part of a playlist, remove the entire playlist."""
         self.bot.queue.pop(ctx.message.guild.id)
         await ctx.tick(True)

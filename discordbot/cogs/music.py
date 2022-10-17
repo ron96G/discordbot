@@ -48,9 +48,8 @@ class Music(commands.Cog):
 
     @commands.command()
     async def play(self, ctx: Context, *, query_or_url: str):
-        """Not implemented"""
-
-        await ctx.reply_formatted_error("play is not implemented.", "Not Implemented")
+        """Alias for stream"""
+        await self.stream(ctx, query_or_url=query_or_url)
 
     @commands.command()
     async def stream(self, ctx: Context, *, query_or_url: str):
