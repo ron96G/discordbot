@@ -195,17 +195,18 @@ class Bot(commands.Bot):
                     + datetime.timedelta(0, LEAVE_AFTER_INACTIVITY_DURATION)
                     < now
                 ):
-                    # remove it due to inactivity
-                    self.log.info(
-                        f"Disconnecting voice_client of {id} due to inactivity"
-                    )
-                    voice_client: discord.VoiceClient = marked_for_inactivity[id][
-                        "voice_client"
-                    ]
+                    if not voice_client.is_playing():
+                        # remove it due to inactivity
+                        self.log.info(
+                            f"Disconnecting voice_client of {id} due to inactivity"
+                        )
+                        voice_client: discord.VoiceClient = marked_for_inactivity[id][
+                            "voice_client"
+                        ]
 
-                    await voice_client.disconnect()
-                    self.queue.remove(id)
-                    left.append(id)
+                        await voice_client.disconnect()
+                        self.queue.remove(id)
+                        left.append(id)
 
             for id in left:
                 del marked_for_inactivity[id]
