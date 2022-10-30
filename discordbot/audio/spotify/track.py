@@ -15,6 +15,9 @@ class SpotifyTrackInfo(TrackInfo):
         self.name = name
 
     def pretty_print(self):
+        return f'"{self.artist} - {self.name}"{" (" + self.url + ")" if self.url != "" else ""}'
+
+    def print(self):
         return f'TrackInfo: "{self.artist} - {self.name}" ({self.url})'
 
 

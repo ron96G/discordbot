@@ -3,6 +3,7 @@ from typing import List
 
 from audio import (
     LinksService,
+    PrioritizedItem,
     SpotifyService,
     SpotifyTrackInfo,
     Track,
@@ -11,6 +12,7 @@ from audio import (
     YoutubeTrackInfo,
 )
 from cogs import Context
+from cogs.utils import reply_track_list
 from common.context import Context
 from discord.embeds import Embed
 from discord.ext import commands
@@ -45,6 +47,63 @@ class Music(commands.Cog):
 
         ctx.voice_client.source.volume = volume / 100
         await ctx.send(f"Changed volume to {volume}%")
+
+    @commands.command()
+    async def stop(self, ctx: commands.Context):
+        """Command the bot to disconnect from the voice channel"""
+        if ctx.voice_client is not None:
+            await ctx.voice_client.disconnect()
+        self.bot.queue.remove(ctx.message.guild.id)
+
+    @commands.command()
+    async def pause(self, ctx: commands.Context):
+        """Pause the currently playing audio source - may be resumed later"""
+        if ctx.voice_client is not None:
+            ctx.voice_client.pause()
+
+    @commands.command()
+    async def skip(self, ctx: Context):
+        """Skip either the currently playing song or the next queued one if none is playing"""
+        async with ctx.typing():
+            if ctx.voice_client is not None and ctx.voice_client.is_playing():
+                # skip the song that the voice_client is currently playing
+                ctx.voice_client.stop()
+            else:
+                # skip the first track that is queued if no song is currently playing
+                await self.remove(ctx)
+
+    @commands.command()
+    async def resume(self, ctx: commands.Context):
+        """Resume the audio source playback"""
+        if ctx.voice_client is not None:
+            ctx.voice_client.resume()
+
+    @commands.command()
+    async def remove(self, ctx: Context):
+        """Remove the next track. If the next track is part of a playlist, remove the entire playlist."""
+        self.bot.queue.pop(ctx.message.guild.id)
+        await ctx.tick(True)
+
+    @commands.command()
+    async def clear(self, ctx: Context):
+        """Clear the queue."""
+        self.bot.queue.clear(ctx.message.guild.id)
+        await ctx.tick(True)
+
+    @commands.command()
+    async def list(self, ctx: Context):
+        """List the current queue."""
+
+        id = ctx.message.guild.id
+        async with ctx.typing():
+            if self.bot.queue.empty(id):
+                await ctx.reply("Queue is empty.")
+            else:
+                content = self.bot.queue.content(id)
+                items: List[PrioritizedItem] = content
+                tracks = [i.item for i in items]
+                tracks.reverse()
+                await reply_track_list(ctx, tracks)
 
     @commands.command()
     async def play(self, ctx: Context, *, query_or_url: str):

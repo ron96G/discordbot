@@ -29,36 +29,6 @@ class Func(commands.Cog):
         await self.bot.join_author(ctx)
 
     @commands.command()
-    async def stop(self, ctx: commands.Context):
-        """Command the bot to disconnect from the voice channel"""
-        if ctx.voice_client is not None:
-            await ctx.voice_client.disconnect()
-        self.bot.queue.remove(ctx.message.guild.id)
-
-    @commands.command()
-    async def pause(self, ctx: commands.Context):
-        """Pause the currently playing audio source - may be resumed later"""
-        if ctx.voice_client is not None:
-            ctx.voice_client.pause()
-
-    @commands.command()
-    async def skip(self, ctx: Context):
-        """Skip either the currently playing song or the next queued one if none is playing"""
-        async with ctx.typing():
-            if ctx.voice_client is not None and ctx.voice_client.is_playing():
-                # skip the song that the voice_client is currently playing
-                ctx.voice_client.stop()
-            else:
-                # skip the first track that is queued if no song is currently playing
-                await self.pop(ctx)
-
-    @commands.command()
-    async def resume(self, ctx: commands.Context):
-        """Resume the audio source playback"""
-        if ctx.voice_client is not None:
-            ctx.voice_client.resume()
-
-    @commands.command()
     async def guess(self, ctx: Context, number: int):
         """Guess a number between 1 and 6"""
         value = randint(1, 6)
@@ -66,9 +36,3 @@ class Func(commands.Cog):
             f'{ctx.author} guessed {"correct" if (number == value) else "incorrect"} ({number})'
         )
         await ctx.tick(number == value)
-
-    @commands.command()
-    async def pop(self, ctx: Context):
-        """Remove the next track. If the next track is part of a playlist, remove the entire playlist."""
-        self.bot.queue.pop(ctx.message.guild.id)
-        await ctx.tick(True)

@@ -178,15 +178,18 @@ class Bot(commands.Bot):
 
             for voice_client in self.voice_clients:
                 voice_client: discord.VoiceClient = voice_client
+                id = voice_client.guild.id
 
                 if not voice_client.is_playing() and not voice_client.is_paused():
-                    id = voice_client.guild.id
                     if id not in marked_for_inactivity:
                         self.log.info(f"Flagged voice_client of {id} for inactivity")
                         marked_for_inactivity[id] = {
                             "timestamp": now,
                             "voice_client": voice_client,
                         }
+                else:
+                    if id in marked_for_inactivity:
+                        del marked_for_inactivity[id]
 
             left = []
             for id in marked_for_inactivity.keys():

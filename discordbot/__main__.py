@@ -19,6 +19,7 @@ coloredlogs.install(
 
 CONFIG_VERSION = os.environ.get("CONFIG_VERSION", None)
 CONFIG_TYPE = os.environ.get("CONFIG_TYPE", "s3")
+logging.info(f"Using CONFIG_TYPE {CONFIG_TYPE}")
 if CONFIG_TYPE == "s3":
     config = ConfigStore.s3(CONFIG_VERSION)
 elif CONFIG_TYPE == "env_file":

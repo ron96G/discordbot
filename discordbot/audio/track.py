@@ -23,8 +23,11 @@ class TrackInfo:
     download_url: Optional[str] = ""
     stream = True
 
+    def print(self):
+        return f'TrackInfo: "{self.title}" ({self.url})'
+
     def pretty_print(self):
-        return f'TrackInfo: "{self.title}"'
+        return f'"{self.title}" ({self.url if self.url is not None else "-"})'
 
 
 class Track:
@@ -77,6 +80,9 @@ class Track:
 
     def max_len(self):
         return self.length
+
+    def get_remaining_tracks(self) -> List[TrackInfo]:
+        return self.info[self.current :]
 
     def pretty_print(self) -> str:
         return f"Track: {len(self)} songs left"

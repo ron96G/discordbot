@@ -1,12 +1,5 @@
 import logging
-from asyncio import (
-    AbstractEventLoop,
-    Future,
-    PriorityQueue,
-    Task,
-    get_running_loop,
-    sleep,
-)
+from asyncio import AbstractEventLoop, Future, Task, get_running_loop, sleep
 from typing import Dict, Optional
 
 from common import Context, format_exception
@@ -57,7 +50,7 @@ class QueueRunner:
         else:
             queue = self.track_queue.get(id)
 
-        task = self.loop.create_task(self.run(queue=queue, guild_id=id))
+        task = self.loop.create_task(self.run(guild_id=id))
         self.background_tasks[id] = task
         task.add_done_callback(self._task_callback)
 
@@ -77,7 +70,7 @@ class QueueRunner:
                     )
             del self.background_tasks[id]
 
-    async def run(self, queue: PriorityQueue, guild_id: str):
+    async def run(self, guild_id: str):
         self.log.info(f"{guild_id}: Started queue_runner")
 
         voice_client = self.find_relevant_voice_client(guild_id)
@@ -98,7 +91,7 @@ class QueueRunner:
 
                 self.log.info(f"{guild_id}: Getting new track from queue")
                 track: Track = (
-                    await queue.get()
+                    await self.track_queue.get(guild_id)
                 ).item  # this blocks until a track is available
                 self.log.info(f"Got new track from queue: {track.pretty_print()}")
 
@@ -147,6 +140,6 @@ class QueueRunner:
 
                         finally:
                             self.log.debug(f"{guild_id}: Popping item from queue")
-                            queue.task_done()
+                            self.track_queue.task_done(guild_id)
 
             await sleep(1)
