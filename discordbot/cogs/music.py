@@ -96,6 +96,11 @@ class Music(commands.Cog):
 
         id = ctx.message.guild.id
         async with ctx.typing():
+            if not self.bot.queue.has(id):
+                return await ctx.reply(
+                    "No queue exists. Use the stream or play command to adds songs."
+                )
+
             if self.bot.queue.empty(id):
                 await ctx.reply("Queue is empty.")
             else:
