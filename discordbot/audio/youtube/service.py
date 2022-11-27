@@ -20,8 +20,10 @@ YTDL_FORMAT_OPTS = {
     "nocheckcertificate": True,
     "ignoreerrors": False,
     "logtostderr": False,
-    "quiet": True,
-    "no_warnings": True,
+    "quiet": False,
+    "verbose": True,
+    "no_warnings": False,
+    "fixup": "detect_or_warn",
     "default_search": "auto",
     "source_address": "0.0.0.0",  # bind to ipv4 since ipv6 addresses cause issues sometimes
     "cachedir": False,
@@ -113,30 +115,44 @@ class YoutubeService:
         return await self._extract_info(info, stream=stream)
 
     async def _extract_info(
-        self, info: YoutubeTrackInfo, stream=True, max_entries=1
+        self, info: YoutubeTrackInfo, stream=True, max_entries=1, cur_try=0, max_try=3
     ) -> List[YoutubeTrackInfo]:
         self.log.warn("Sending request via YTDL")
-        data = ytdl.extract_info(info.url, download=not stream)
-        info_list: List[YoutubeTrackInfo] = []
+        try:
+            cur_try += 1
+            data = ytdl.extract_info(info.url, download=not stream)
+            info_list: List[YoutubeTrackInfo] = []
 
-        self.log.debug(data)
+            self.log.debug(data)
 
-        if "entries" in data:
-            for data in data["entries"]:
-                if len(info_list) >= max_entries:
-                    break
+            if "entries" in data:
+                for data in data["entries"]:
+                    if len(info_list) >= max_entries:
+                        break
+                    download_url = (
+                        data["url"] if stream else ytdl.prepare_filename(data)
+                    )
+                    info_list.append(
+                        YoutubeTrackInfo(
+                            info.url, info.title, info.thumbnail, download_url
+                        )
+                    )
+
+            else:
                 download_url = data["url"] if stream else ytdl.prepare_filename(data)
                 info_list.append(
                     YoutubeTrackInfo(info.url, info.title, info.thumbnail, download_url)
                 )
-
-        else:
-            download_url = data["url"] if stream else ytdl.prepare_filename(data)
-            info_list.append(
-                YoutubeTrackInfo(info.url, info.title, info.thumbnail, download_url)
-            )
-
-        return info_list
+            return info_list
+        except Exception as e:
+            if cur_try >= max_try:
+                self.log.warn("Failed to extract youtube info. Retrying...", e)
+                return self._extract_info(info, stream, max_entries, cur_try, max_try)
+            else:
+                self.log.error(
+                    "Failed to extract youtube info. Exceeded retry limit", e
+                )
+                raise e
 
     async def _fetch_video_info(self, req) -> List[YoutubeTrackInfo]:
         info_list = []

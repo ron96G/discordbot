@@ -12,6 +12,7 @@ logging.basicConfig(
     level=os.environ.get("LOGLEVEL", "INFO"),
     format="[%(asctime)s] [%(pathname)s:%(lineno)d] %(levelname)s - %(message)s",
     datefmt="%Y-%m-%dT%H:%M:%S",
+    force=True,
 )
 coloredlogs.install(
     fmt="[%(asctime)s] [%(pathname)s:%(lineno)d] %(levelname)s - %(message)s"
