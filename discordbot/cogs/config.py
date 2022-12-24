@@ -40,6 +40,7 @@ class Config(commands.Cog):
             return ctx.message.guild.id
 
     @commands.Command
+    @commands.dm_only()
     async def set(self, ctx: Context, key: str, *, val: str):
         """Set a config parameter for your bot instance"""
         id = await self.get_session_ctx_guild_id(ctx)
@@ -60,6 +61,7 @@ class Config(commands.Cog):
         return await ctx.tick(True)
 
     @commands.Command
+    @commands.dm_only()
     async def get(self, ctx: Context, *args):
         """Get either one config parameter by the provided key
         or the entire config for your bot instance"""
@@ -75,6 +77,7 @@ class Config(commands.Cog):
             return await ctx.send(f"Current config for {key} is {val}")
 
     @commands.Command
+    @commands.dm_only()
     async def reset(self, ctx: Context):
         """Reset the config to default"""
         id = ctx.message.guild.id
