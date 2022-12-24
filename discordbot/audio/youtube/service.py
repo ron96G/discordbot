@@ -1,4 +1,5 @@
 import logging
+import os
 import re
 from typing import List
 
@@ -30,7 +31,16 @@ YTDL_FORMAT_OPTS = {
     "keepvideo": False,
 }
 
-ytdl = youtube_dl.YoutubeDL(YTDL_FORMAT_OPTS)
+
+def set_additional_ytdl_opts(*opts: str):
+    ydtl_opts = YTDL_FORMAT_OPTS.copy()
+    if len(opts) % 2 != 0:
+        raise YouTubeError("Invalid number of argument for ytdl opts extension")
+
+    for i in range(0, len(opts), 2):
+        ydtl_opts[opts[i]] = opts[i + 1]
+
+    return ydtl_opts
 
 
 class YouTubeError(Exception):
@@ -43,8 +53,14 @@ class YoutubeService:
 
     log = logging.getLogger("svc")
 
-    def __init__(self, service):
+    def __init__(self, service, ytdl_opts=None):
         self.service = service
+        self.ytdl = youtube_dl.YoutubeDL(ytdl_opts or YTDL_FORMAT_OPTS)
+
+    @classmethod
+    def new_with_credentials(cls, service, username: str, password: str):
+        ytdl_opts = set_additional_ytdl_opts("username", username, "password", password)
+        return cls(service, ytdl_opts)
 
     def __del__(self):
         self.service.close()
@@ -120,7 +136,7 @@ class YoutubeService:
         self.log.warn("Sending request via YTDL")
         try:
             cur_try += 1
-            data = ytdl.extract_info(info.url, download=not stream)
+            data = self.ytdl.extract_info(info.url, download=not stream)
             info_list: List[YoutubeTrackInfo] = []
 
             self.log.debug(data)
@@ -130,7 +146,7 @@ class YoutubeService:
                     if len(info_list) >= max_entries:
                         break
                     download_url = (
-                        data["url"] if stream else ytdl.prepare_filename(data)
+                        data["url"] if stream else self.ytdl.prepare_filename(data)
                     )
                     info_list.append(
                         YoutubeTrackInfo(
@@ -139,7 +155,9 @@ class YoutubeService:
                     )
 
             else:
-                download_url = data["url"] if stream else ytdl.prepare_filename(data)
+                download_url = (
+                    data["url"] if stream else self.ytdl.prepare_filename(data)
+                )
                 info_list.append(
                     YoutubeTrackInfo(info.url, info.title, info.thumbnail, download_url)
                 )

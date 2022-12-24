@@ -127,6 +127,16 @@ VALID_CONFIG_PARAM_KEYS = {
         "description": f"The language code to use for the Wikipedia API. Must match '{INPUT_VALIDATION_RAW_RE}'",
         "valid_inputs": lambda val: INPUT_VALIDATION_STR.match(val),
     },
+    "youtubeUsername": {
+        "secret": True,
+        "description": "The username which will be used to access YouTube. Required to access age restricted videos.",
+        "valid_inputs": lambda val: len(val) > 1,
+    },
+    "youtubePassword": {
+        "secret": True,
+        "description": "The password which will be used to access YouTube. Required to access age restricted videos.",
+        "valid_inputs": lambda val: len(val) > 1,
+    },
 }
 
 

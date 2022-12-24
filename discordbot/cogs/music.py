@@ -124,6 +124,20 @@ class Music(commands.Cog):
 
         async with ctx.typing():
             info = extract_embedded_info(ctx)
+            id = ctx.guild.id
+
+            username = self.bot.config.get_config_for(
+                id, key="youtubeUsername", default=None
+            )
+            password = self.bot.config.get_config_for(
+                id, key="youtubePassword", default=None
+            )
+            if username is not None and password is not None:
+                youtube_svc = YoutubeService.new_with_credentials(
+                    self.youtube.service, username, password
+                )
+            else:
+                youtube_svc = self.youtube
 
             try:
                 if self.spotify.is_spotify_url(query_or_url):
@@ -135,12 +149,12 @@ class Music(commands.Cog):
                     async def fetch_download_url(track_info: SpotifyTrackInfo):
                         self.log.debug(f"Running before_build: {track_info}")
                         youtube_info = (
-                            await self.youtube.get_video_info_by_query(
+                            await youtube_svc.get_video_info_by_query(
                                 f"{track_info.artist} - {track_info.name}"
                             )
                         )[0]
                         youtube_download_info = (
-                            await self.youtube.get_download_url(youtube_info, True)
+                            await youtube_svc.get_download_url(youtube_info, True)
                         )[0]
 
                         track_info.title = youtube_info.title
@@ -149,14 +163,14 @@ class Music(commands.Cog):
 
                     track.set_before_build(fetch_download_url)
 
-                elif self.youtube.is_yt_url(query_or_url):
+                elif youtube_svc.is_yt_url(query_or_url):
                     self.log.info("input is a youtube url")
 
-                    if self.youtube.is_yt_playlist_url(query_or_url) or info is None:
+                    if youtube_svc.is_yt_playlist_url(query_or_url) or info is None:
                         self.log.info(
                             "embedded info is insufficient. Fetching info from Youtube."
                         )
-                        info = await self.youtube.get_info(query_or_url)
+                        info = await youtube_svc.get_info(query_or_url)
                     else:
                         info.url = query_or_url
 
@@ -165,7 +179,7 @@ class Music(commands.Cog):
                     async def fetch_download_url(track_info: YoutubeTrackInfo):
                         self.log.debug(f"Running before_build: {track_info}")
                         youtube_info = (
-                            await self.youtube.get_download_url(track_info, True)
+                            await youtube_svc.get_download_url(track_info, True)
                         )[0]
                         track_info.title = youtube_info.title
                         track_info.download_url = youtube_info.download_url
@@ -189,9 +203,9 @@ class Music(commands.Cog):
                 else:
                     self.log.info("input is a query")
                     youtube_info = (
-                        await self.youtube.get_video_info_by_query(query_or_url)
+                        await youtube_svc.get_video_info_by_query(query_or_url)
                     )[0]
-                    youtube_download_info = await self.youtube.get_download_url(
+                    youtube_download_info = await youtube_svc.get_download_url(
                         youtube_info
                     )
                     track = Track(ctx, youtube_download_info)

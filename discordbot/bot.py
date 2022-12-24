@@ -130,6 +130,8 @@ class Bot(commands.Bot):
 
         if isinstance(error, commands.CommandInvokeError):
             await ctx.reply_formatted_error(error.original)
+        if isinstance(error, commands.CheckFailure):
+            await ctx.reply_formatted_error("Unauthorized")
         else:
             await ctx.reply_formatted_error(error)
 

@@ -36,3 +36,13 @@ class Func(commands.Cog):
             f'{ctx.author} guessed {"correct" if (number == value) else "incorrect"} ({number})'
         )
         await ctx.tick(number == value)
+
+    @commands.command()
+    @commands.has_permissions(administrator=True)
+    async def whoami(self, ctx: Context):
+        await ctx.send(f"You have all privileges {ctx.message.author.mention}")
+
+    @whoami.error
+    async def whoami_error(ctx, error):
+        if isinstance(error, commands.CheckFailure):
+            await ctx.send("You have limited privileges {ctx.message.author.mention}")

@@ -5,6 +5,7 @@ from common.context import Context
 from discord.ext import commands
 
 
+@commands.has_permissions(administrator=True)
 class Config(commands.Cog):
     def __init__(self, bot):
         self.log = logging.getLogger("cog")
