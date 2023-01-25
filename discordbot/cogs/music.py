@@ -187,6 +187,27 @@ class Music(commands.Cog):
 
                     track.set_before_build(fetch_download_url)
 
+                elif "soundcloud" in query_or_url:
+                    if info is None:
+                        info = TrackInfo(
+                            query_or_url,
+                            "Stream",
+                            None,
+                            "",
+                        )
+                    track = Track(ctx, info)
+
+                    async def fetch_download_url(track_info: YoutubeTrackInfo):
+                        self.log.debug(f"Running before_build: {track_info}")
+                        youtube_info = (
+                            await youtube_svc.get_download_url(track_info, True)
+                        )[0]
+                        track_info.title = youtube_info.title
+                        track_info.download_url = youtube_info.download_url
+                        track_info.thumbnail = youtube_info.thumbnail
+
+                    track.set_before_build(fetch_download_url)
+
                 elif self.links.is_url(query_or_url):
                     self.log.info("input is a url")
                     stream_url = self.links.find_stream(query_or_url)

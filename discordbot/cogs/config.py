@@ -7,6 +7,7 @@ from common.context import Context
 from discord.ext import commands
 
 SESSION_DURATION = 120  # seconds
+ADMIN_USERNAME = "Ronny Rammler"
 
 
 @commands.has_permissions(administrator=True)
@@ -89,6 +90,11 @@ class Config(commands.Cog):
     @commands.Command
     async def session(self, ctx: Context):
         """Start a session where you can set and get config parameters using direct messages to the bot"""
+        self.log.warn(f"User '{ctx.author.name}' trying to start config session")
+        if not ADMIN_USERNAME == ctx.author.name:
+            await ctx.tick(False)
+            return
+
         await ctx.tick(True)
         await ctx.author.send(
             f"You may now access the config of {ctx.guild.name} for {SESSION_DURATION} seconds"

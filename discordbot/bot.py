@@ -3,6 +3,8 @@ import datetime
 import logging
 import mimetypes
 import os
+import signal
+import sys
 import traceback
 from typing import List
 
@@ -60,7 +62,18 @@ class Bot(commands.Bot):
         if not os.path.exists(self.dir):
             os.makedirs(self.dir)
 
+    async def handle_shutdown(self, *args):
+        self.config.persist(args)
+        await self.close()
+
     async def setup_hook(self):
+        for signame in ("SIGINT", "SIGTERM"):
+            self.loop.add_signal_handler(
+                getattr(signal, signame),
+                lambda signame=signame: asyncio.create_task(
+                    self.handle_shutdown(signame)
+                ),
+            )
 
         self.queue = TrackQueue(50, self.loop)
         self.runner = QueueRunner(self, self.queue, self.loop)

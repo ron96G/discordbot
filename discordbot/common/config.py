@@ -1,4 +1,3 @@
-import atexit
 import json
 import logging
 import re
@@ -159,7 +158,7 @@ class ConfigMap:
             del cfg["id"]
             self._configs[id] = cfg
 
-        atexit.register(self.persist)
+        self.log.debug("Setting atexit persistance")
 
     def exists(self, id: str):
         return id in self._configs
@@ -216,7 +215,7 @@ class ConfigMap:
             logging.warn("failed to restore config from file")
             return cls([], configfile_name=configfile_name)
 
-    def persist(self):
+    def persist(self, *args):
         self.log.info(f"Persisting current config state to {self.configfile_name}...")
         with open(self.configfile_name, "w") as f:
             out = []

@@ -3,10 +3,10 @@ import os
 import re
 from typing import List
 
-import youtube_dl
+import yt_dlp
 from googleapiclient.errors import HttpError
 
-from .track import YoutubeTrack, YoutubeTrackInfo
+from .track import YoutubeTrackInfo
 
 YOUTUBE_VIDEO_BASE_URL = "https://www.youtube.com/watch?v="
 YOUTUBE_VIDEO_ID_REGEX = re.compile(r"^.*v=([^&]*).*$")
@@ -55,7 +55,7 @@ class YoutubeService:
 
     def __init__(self, service, ytdl_opts=None):
         self.service = service
-        self.ytdl = youtube_dl.YoutubeDL(ytdl_opts or YTDL_FORMAT_OPTS)
+        self.ytdl = yt_dlp.YoutubeDL(ytdl_opts or YTDL_FORMAT_OPTS)
 
     @classmethod
     def new_with_credentials(cls, service, username: str, password: str):

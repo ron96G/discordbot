@@ -9,12 +9,12 @@ python = "^3.8.0"
 boto3 = "^1.24.89"
 "discord.py" = {extras = ["voice"], version = "^2.0.1"}
 google-api-python-client = "^2.64.0"
-youtube_dl = "^2021.12.17"
 spotipy = "^2.20.0"
 wikipedia = "^1.4.0"
 streamlink = "^5.0.1"
 twitchAPI = "^2.5.7"
 coloredlogs = "^15.0.1"
+yt-dlp = "^2023.1.6"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"

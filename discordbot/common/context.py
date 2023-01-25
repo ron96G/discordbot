@@ -31,7 +31,7 @@ class Context(commands.Context):
         embed = discord.Embed(
             title=title, description=msg, color=discord.Color.dark_gold()
         )
-        embed.set_author(name=self.author.name, icon_url=self.author.avatar.url)
+        embed.set_author(name=self.author.display_name, icon_url=self.author.avatar.url)
         if thumbnail_url:
             embed.set_thumbnail(url=thumbnail_url)
 
