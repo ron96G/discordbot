@@ -1,4 +1,4 @@
-#!/usr/bin/python3.8
+#!/usr/bin/python3.9
 
 import logging
 import os
@@ -31,7 +31,7 @@ else:
 config.set_in_env()
 
 TOKEN = config.get("DISCORD_SECRET_TOKEN")
-FFMPEG_VERSION = config.get("FFMPEG_VERSION", fallback="5.1.1")
+FFMPEG_VERSION = config.get("FFMPEG_VERSION", fallback="7.1.0")
 
 if __name__ == "__main__":
 

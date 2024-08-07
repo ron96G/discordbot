@@ -7,9 +7,9 @@ import spotipy
 from .track import SpotifyTrackInfo
 
 SPOTIFY_MARKET = "DE"
-SPOTIFY_TRACK_ID_REGEX = re.compile(r".*spotify\.com\/track\/(.*?)\?si=.*")
-SPOTIFY_ALBUM_ID_REGEX = re.compile(r".*spotify\.com\/album\/(.*?)\?si=.*")
-SPOTIFY_PLAYLIST_ID_REGEX = re.compile(r".*spotify\.com\/playlist\/(.*?)\?si=.*")
+SPOTIFY_TRACK_ID_REGEX = re.compile(r".*spotify\.com\/.*track\/(.*?)\?si=.*")
+SPOTIFY_ALBUM_ID_REGEX = re.compile(r".*spotify\.com\/.*album\/(.*?)\?si=.*")
+SPOTIFY_PLAYLIST_ID_REGEX = re.compile(r".*spotify\.com\/.*playlist\/(.*?)\?si=.*")
 
 
 class SpotifyError(Exception):

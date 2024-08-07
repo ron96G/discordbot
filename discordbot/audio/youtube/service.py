@@ -14,6 +14,7 @@ YOUTUBE_PLAYLIST_ID_REGEX = re.compile(r"^.*list=([^&]*).*$")
 
 YTDL_OUTPUT_DIR = "./ytdl"
 YTDL_FORMAT_OPTS = {
+    "default_search": "ytsearch",
     "format": "bestaudio/best",
     "outtmpl": YTDL_OUTPUT_DIR + "%(extractor)s-%(id)s-%(title)s.%(ext)s",
     "restrictfilenames": True,

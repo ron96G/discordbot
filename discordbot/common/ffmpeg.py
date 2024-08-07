@@ -39,8 +39,10 @@ def get_installed_version() -> str:
 
 
 def install(version: str, force=False):
+    print(f"Trying to install ffmpeg in version {version}")
 
     FFMPEG_DOWNLOAD_URL = f"https://johnvansickle.com/ffmpeg/releases/ffmpeg-{version}-amd64-static.tar.xz"
+    OLD_DOWNLOAD_URL = f"https://johnvansickle.com/ffmpeg/old-releases/ffmpeg-{version}-amd64-static.tar.xz"
     LOCAL_PATH = f"/usr/local/bin"
     FFMPEG_TAR_PATH = f"{LOCAL_PATH}/ffmpeg-{version}-amd64-static.tar.xz"
     FFMPEG_LOCAL_PATH = f"{LOCAL_PATH}/ffmpeg-{version}-amd64-static"
@@ -56,6 +58,9 @@ def install(version: str, force=False):
         return False
 
     response = requests.get(FFMPEG_DOWNLOAD_URL)
+    if response.status_code == 404:
+        print(f"Did not find version in current releases. Trying old-releases...")
+        response = requests.get(OLD_DOWNLOAD_URL)
 
     if response.status_code != 200:
         print(f"Failed to download {FFMPEG_DOWNLOAD_URL} with {response.status_code}")
